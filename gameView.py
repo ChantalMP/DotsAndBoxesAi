@@ -2,8 +2,11 @@ import random
 import numpy as np
 width = 4
 height = 4
-# obstacle_length = random.randrange(1,3)
-# obstacle_number = random.randrange(1,3)
+max_obstacles = 2
+max_obstacle_width = 2
+
+class MyException(Exception):
+    pass
 
 def init_Field():
     # rows
@@ -17,6 +20,44 @@ def init_Field():
         columns[i][width] = 1
 
     return  rows,columns
+
+def create_obstacles(rows, columns):
+    obstacle_number = random.randrange(1, max_obstacles+1)
+
+    for i in range(obstacle_number):
+        obstacle_length = random.randrange(1, max_obstacle_width+1)
+        #find random but free place -> place = column border on the right (like full fields)
+        while(True):
+            print("while")
+            h = random.randrange(0, height)
+            w = random.randrange(0, width)
+            if not test_field_full(rows, columns, h, w):
+                setField(rows, columns, h, w)
+                obstacle_length -= 1
+                while(obstacle_length != 0):
+                    #horizontal or vertical
+                    dir = random.randrange(0,2)
+                    if dir == 0: #vertical
+                        h = h+1 if h == 0 else h-1
+                        w = w
+                    else:#horizontal
+                        w = w + 1 if w == 0 else w - 1
+                        h = h
+                    setField(rows, columns, h, w)
+                    obstacle_length -= 1
+                break
+
+    return rows, columns
+
+def setField(rows, columns, h, w):
+    global height, width
+    if h >= height or w >= width:
+        raise MyException("Invalid width or height")
+    columns[h][w] = 1
+    columns[h][w + 1] = 1
+    rows[h][w] = 1
+    rows[h+1][w] = 1
+    return rows, columns
 
 #kann man später wieder löschen
 def test_config():
@@ -48,6 +89,8 @@ def test_field_full(rows, columns, height, weight):
                     return True
         else:
             return False
+    else:
+        False
 
 def print_Field(rows, columns):
     out = ""
@@ -74,31 +117,7 @@ def print_Field(rows, columns):
 
     return out
 
-'''
-def print_Field(zeilen , spalten):
-    out = ""
-    # Because the array sizes are different, a one size fits all approach requires expection handling
-    for h in range(height+1):
-        # one for spalten one for zeilen
-        for i in range(2):
-            for w in range(width+1):
-                # catch if too big
-                if i == 0 and w < len(zeilen[0]):
-                    if zeilen[h][w] == 1 :
-                        out += "--"
-                    else:
-                        out += "  "
-                elif i == 1 and h < len(spalten):
-                    if spalten[h][w] == 1 and i == 1 :
-                        out += "|"
-                    else:
-                        out += "  "
-            out += "\n"
-
-    return out
-'''
-
-zeilen,spalten = init_Field()
-zeilen,spalten = test_config()
-outstr = print_Field(rows=zeilen, columns= spalten)
+rows,columns = init_Field()
+rows,columns = create_obstacles(rows, columns)
+outstr = print_Field(rows=rows, columns= columns)
 print(outstr)
