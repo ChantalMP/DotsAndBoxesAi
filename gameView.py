@@ -3,7 +3,7 @@ import numpy as np
 width = 4
 height = 4
 max_obstacles = 2
-max_obstacle_width = 2
+max_obstacle_width = 5
 
 class MyException(Exception):
     pass
@@ -19,23 +19,29 @@ def init_Field():
         columns[i][0] = 1
         columns[i][width] = 1
 
+    rows, columns = create_obstacles(rows, columns)
+
     return  rows,columns
 
 def create_obstacles(rows, columns):
     obstacle_number = random.randrange(1, max_obstacles+1)
+    print(obstacle_number, '\n')
 
     for i in range(obstacle_number):
         obstacle_length = random.randrange(1, max_obstacle_width+1)
+        print("length: ", obstacle_length, '\n')
         #find random but free place -> place = column border on the right (like full fields)
-        while(True):
-            print("while")
+        fields = []
+        obstacle_length_intern = obstacle_length
+        while(len(fields) != obstacle_length):
+            print("start")
+            fields = []
             h = random.randrange(0, height)
             w = random.randrange(0, width)
             if not test_field_full(rows, columns, h, w):
-                setField(rows, columns, h, w)
-                obstacle_length -= 1
-                while(obstacle_length != 0):
-                    #horizontal or vertical
+                fields.append((h,w))
+                obstacle_length_intern -= 1
+                while(obstacle_length_intern != 0):
                     dir = random.randrange(0,2)
                     if dir == 0: #vertical
                         h = h+1 if h == 0 else h-1
@@ -43,9 +49,18 @@ def create_obstacles(rows, columns):
                     else:#horizontal
                         w = w + 1 if w == 0 else w - 1
                         h = h
-                    setField(rows, columns, h, w)
-                    obstacle_length -= 1
-                break
+                    if not test_field_full(rows, columns, h, w):
+                        if (h,w) not in fields:
+                            fields.append((h, w))
+                            obstacle_length_intern -= 1
+                        else:
+                            break #try again
+                    else:
+                        break #try again
+
+        print('finish', fields, '\n')
+        for elem in fields:
+            setField(rows, columns, elem[0], elem[1])
 
     return rows, columns
 
@@ -59,27 +74,7 @@ def setField(rows, columns, h, w):
     rows[h+1][w] = 1
     return rows, columns
 
-#kann man später wieder löschen
-def test_config():
-    # rows
-    rows, columns = init_Field()
-
-    columns[0][1] = 1
-    rows[1][0] = 1
-
-    columns[2][2] = 1
-    columns[2][3] = 1
-    rows[2][2] = 1
-    rows[3][2] = 1
-
-    #full
-    rows = np.ones(shape=(width + 1, height), dtype=int)
-    columns = np.ones(shape=(width, height + 1), dtype=int)
-
-    return  rows,columns
-
-#does field belong to one user or obstacle?
-#test field left to possible edge
+#test field left to given edge
 #called when painting the vertical border
 def test_field_full(rows, columns, height, weight):
     if weight < len(columns):
@@ -118,6 +113,5 @@ def print_Field(rows, columns):
     return out
 
 rows,columns = init_Field()
-rows,columns = create_obstacles(rows, columns)
 outstr = print_Field(rows=rows, columns= columns)
 print(outstr)
