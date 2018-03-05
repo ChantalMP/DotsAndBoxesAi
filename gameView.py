@@ -3,7 +3,7 @@ import numpy as np
 width = 4
 height = 4
 max_obstacles = 2
-max_obstacle_width = 2
+max_obstacle_width = 7
 
 class MyException(Exception):
     pass
@@ -79,7 +79,7 @@ def test_field_full(rows, columns, height, width):
         else:
             return False
     else:
-        False
+        return False
 
 def print_Field(rows, columns):
     out = "  "
