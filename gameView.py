@@ -116,4 +116,6 @@ rows,columns = init_Field()
 outstr = print_Field(rows=rows, columns= columns)
 print(outstr)
 
-print('chantal')
+print('talle')
+
+print('ege')
