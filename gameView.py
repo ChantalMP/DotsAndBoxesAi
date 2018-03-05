@@ -3,7 +3,7 @@ import numpy as np
 width = 4
 height = 4
 max_obstacles = 2
-max_obstacle_width = 5
+max_obstacle_width = 2
 
 class MyException(Exception):
     pass
@@ -21,20 +21,17 @@ def init_Field():
 
     rows, columns = create_obstacles(rows, columns)
 
-    return  rows,columns
+    return  rows, columns
 
 def create_obstacles(rows, columns):
     obstacle_number = random.randrange(1, max_obstacles+1)
-    print(obstacle_number, '\n')
 
     for i in range(obstacle_number):
         obstacle_length = random.randrange(1, max_obstacle_width+1)
-        print("length: ", obstacle_length, '\n')
         #find random but free place -> place = column border on the right (like full fields)
         fields = []
         obstacle_length_intern = obstacle_length
         while(len(fields) != obstacle_length):
-            print("start")
             fields = []
             h = random.randrange(0, height)
             w = random.randrange(0, width)
@@ -58,7 +55,6 @@ def create_obstacles(rows, columns):
                     else:
                         break #try again
 
-        print('finish', fields, '\n')
         for elem in fields:
             setField(rows, columns, elem[0], elem[1])
 
@@ -76,11 +72,9 @@ def setField(rows, columns, h, w):
 
 #test field left to given edge
 #called when painting the vertical border
-def test_field_full(rows, columns, height, weight):
-    if weight < len(columns):
-        if columns[height][weight+1] ==  1:
-            if rows[height][weight] == 1:
-                if rows[height+1][weight] == 1:
+def test_field_full(rows, columns, height, width):
+    if width < len(columns):
+        if columns[height][width+1] and rows[height][width] == 1 and rows[height+1][width] == 1:
                     return True
         else:
             return False
@@ -101,7 +95,7 @@ def print_Field(rows, columns):
                     else:
                         out += "   "
                 elif i == 1 and h < len(columns):
-                    if columns[h][w] == 1 and i == 1 : #warum fragst du nochmal ob i == 1 ist?
+                    if columns[h][w] == 1:
                         if test_field_full(rows, columns, h, w):
                             out += "| x"
                         else:
@@ -114,8 +108,4 @@ def print_Field(rows, columns):
 
 rows,columns = init_Field()
 outstr = print_Field(rows=rows, columns= columns)
-print(outstr)
-
-print('talle')
-
-print('ege')
+#print(outstr)
