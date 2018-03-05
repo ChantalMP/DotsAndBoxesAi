@@ -82,19 +82,33 @@ def test_field_full(rows, columns, height, width):
         False
 
 def print_Field(rows, columns):
-    out = ""
+    out = "  "
+    for i in range(0,width):
+        if i < 10:
+            out += '  '+str(i)
+        else:
+            out+=' ' + str(i)
+    out += "\n"
     # Because the array sizes are different, a one size fits all approach requires expection handling
     for h in range(height+1):
         # one for columns, one for rows
         for i in range(2):
             for w in range(width+1):
                 # catch if too big
+                if i == 0 and w == 0:
+                        out += '  '
                 if i == 0 and w < len(rows[0]):
                     if rows[h][w] == 1 :
                         out += " --"
                     else:
                         out += "   "
                 elif i == 1 and h < len(columns):
+                    if w == 0:
+                        if h < 10:
+                            out += ' ' +str(h)
+                        else:
+                            out += str(h)
+
                     if columns[h][w] == 1:
                         if test_field_full(rows, columns, h, w):
                             out += "| x"
@@ -106,6 +120,6 @@ def print_Field(rows, columns):
 
     return out
 
-rows,columns = init_Field()
-outstr = print_Field(rows=rows, columns= columns)
-#print(outstr)
+
+
+

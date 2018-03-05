@@ -22,3 +22,18 @@ def newFullField(field, which, h, w):
             if field[0][h][w] == 1 and field[1][h][w+1]==1 and field[0][h+1][w] == 1:
                 return True
     return False
+
+def validate_move(field_arrays, array_i, height, width):
+    try:
+        print("here1")
+        print(field_arrays[0])
+        print(array_i, height, width)
+        if field_arrays[array_i][height][width] == 1:
+            print("here2")
+            return False
+        else:
+            print("here3")
+            return True
+    except:
+        print("here4")
+        return False
