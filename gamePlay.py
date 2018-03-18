@@ -32,11 +32,15 @@ class Game:
 
     def random_move(self):
         success = False
-        while not success:
+        while not success and self.free_edge_count() > 0:
             w = random.randint(0, width + 1)
             h = random.randint(0, height + 1)
             i = random.randint(0, 2)
             success = self.make_move(i, h, w)
+
+    def n_random_moves(self , n):
+        for i in range(0,n):
+            self.random_move()
 
     def convert_user_move_to_array(self, move):
         try:
@@ -48,6 +52,23 @@ class Game:
                 return move
         except:
             return False
+
+    def free_edge_count(self):
+        counter = 0
+        for i in self.rows:
+            for y in i:
+                if y == 0:
+                    counter+=1
+                else:
+                    continue
+        for i in self.columns:
+            for y in i:
+                if y == 0:
+                    counter+=1
+                else:
+                    continue
+        return counter
+
 
     def obstacle_count(self):
         c = 0
@@ -88,6 +109,8 @@ class Game:
     #     print(player2)
 
 game = Game()
-while True:
+while True and game.free_edge_count() > 0:
     print(field_to_str(game.rows, game.columns))
+    print(game.free_edge_count())
     game.random_move()
+print(field_to_str(game.rows, game.columns))

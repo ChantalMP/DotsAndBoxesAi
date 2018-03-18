@@ -37,3 +37,5 @@ def game_over(obstacle_count , p1 , p2):
         return True
     else:
         return False
+
+
