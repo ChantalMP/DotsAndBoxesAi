@@ -4,12 +4,7 @@ import numpy as np
 width = 4
 height = 4
 max_obstacles = 2
-<<<<<<< HEAD
 max_obstacle_width = 2
-
-=======
-max_obstacle_width = 7
->>>>>>> master
 
 class MyException(Exception):
     pass
@@ -27,22 +22,8 @@ def init_Field():
         columns[i][width] = 1
 
     rows, columns = create_obstacles(rows, columns)
-
-<<<<<<< HEAD
     return rows, columns
 
-
-def create_obstacles(rows, columns):
-    obstacle_number = random.randrange(1, max_obstacles + 1)
-
-    for i in range(obstacle_number):
-        obstacle_length = random.randrange(1, max_obstacle_width + 1)
-        # find random but free place -> place = column border on the right (like full fields)
-        fields = []
-        obstacle_length_intern = obstacle_length
-        while (len(fields) != obstacle_length):
-=======
-    return  rows, columns
 
 def create_obstacles(rows, columns):
     obstacle_number = random.randrange(1, max_obstacles+1)
@@ -53,7 +34,6 @@ def create_obstacles(rows, columns):
         fields = []
         obstacle_length_intern = obstacle_length
         while(len(fields) != obstacle_length):
->>>>>>> master
             fields = []
             h = random.randrange(0, height)
             w = random.randrange(0, width)
@@ -93,71 +73,43 @@ def setField(rows, columns, h, w):
     rows[h + 1][w] = 1
     return rows, columns
 
-<<<<<<< HEAD
 
-# test field left to given edge
-# called when painting the vertical border
-def test_field_full(rows, columns, height, width):
-    if width < len(columns):
-        if columns[height][width + 1] and rows[height][width] == 1 and rows[height + 1][width] == 1:
-            return True
-=======
 #test field left to given edge
 #called when painting the vertical border
 def test_field_full(rows, columns, height, width):
     if width < len(columns):
         if columns[height][width+1] and rows[height][width] == 1 and rows[height+1][width] == 1:
                     return True
->>>>>>> master
         else:
             return False
     else:
         return False
 
-<<<<<<< HEAD
-
 def field_to_str(rows, columns):
-    out = "  "
-    for i in range(0, width):
-        if i < 10:
-            out += '  ' + str(i)
-        else:
-            out += ' ' + str(i)
-=======
-def print_Field(rows, columns):
     out = "  "
     for i in range(0,width):
         if i < 10:
             out += '  '+str(i)
         else:
             out+=' ' + str(i)
->>>>>>> master
     out += "\n"
     # Because the array sizes are different, a one size fits all approach requires expection handling
-    for h in range(height + 1):
+    for h in range(height+1):
         # one for columns, one for rows
         for i in range(2):
-            for w in range(width + 1):
+            for w in range(width+1):
                 # catch if too big
                 if i == 0 and w == 0:
-<<<<<<< HEAD
-                    out += '  '
-=======
                         out += '  '
->>>>>>> master
                 if i == 0 and w < len(rows[0]):
-                    if rows[h][w] == 1:
+                    if rows[h][w] == 1 :
                         out += " --"
                     else:
                         out += "   "
                 elif i == 1 and h < len(columns):
                     if w == 0:
                         if h < 10:
-<<<<<<< HEAD
-                            out += ' ' + str(h)
-=======
                             out += ' ' +str(h)
->>>>>>> master
                         else:
                             out += str(h)
 
@@ -171,10 +123,3 @@ def print_Field(rows, columns):
             out += "\n"
 
     return out
-<<<<<<< HEAD
-=======
-
-
-
-
->>>>>>> master

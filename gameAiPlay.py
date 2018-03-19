@@ -14,15 +14,6 @@ class GameExtended(Game):
     def __init__(self):
         super().__init__()
 
-    def create_train_data(self):
-        game = GameExtended()
-
-        random_move_count = random.randint(0, game.free_edge_count()-1)
-        game.n_random_moves(random_move_count)
-        input_array = self.convert_field_to_inputarray([game.rows, game.columns])
-        r_input_array = input_array.reshape((1,-1))
-        return game, r_input_array
-
     def convert_action_to_move(self,action):
         array_i = 0
         w = 0
@@ -66,21 +57,30 @@ class GameExtended(Game):
         return input
 
     # action = move
-    def _update_state(self, action):
+    def _update_state(self, action, playernr):
         array_i, height, width = self.convert_action_to_move(action)
+        old_field = [self.rows, self.columns]
         self.success = self.make_move(array_i, height, width)
+        new_fields = self.newFullField(field, array_i, height, width)
+        self.calculate_active_player(playernr)["Points"] += new_fields
 
-    def _get_reward(self):
-        return 1 if self.success else -1
+    def _get_reward(self, playernr, old_score):
+        #return 1 if self.success else -1
+        if not self.success:
+            return -5
+        else:
+            return self.get_player_score(playernr) - old_score
 
-    def act(self, action):
-        self._update_state(action)
-        reward = self._get_reward()
+    def act(self, action, playernr):
+        old_score = self.get_player_score(playernr)
+        self._update_state(action, playernr)
+        reward = self._get_reward(playernr, old_score)
         return self.create_train_data(), reward
 
 
-class ValidAi:
-    def __init__(self, max_memory=100, discount=.9):
+class Ai:
+    def __init__(self, playernr, max_memory=100, discount=.9):
+        self.playernr = playernr
         self.max_memory = max_memory
         self.memory = list()
         # self.discount = discount
