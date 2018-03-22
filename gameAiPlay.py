@@ -82,7 +82,7 @@ class GameExtended(Game):
         if not self.success:
             return non_valid_move_reward
         else:
-            return self.get_player_score(playernr) - old_score
+            return -1*non_valid_move_reward + (self.get_player_score(playernr) - old_score)*2
 
 
     def act(self, action, playernr):
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     testing_model = False
 
     if not testing_model:
-        exp_replay = Ai(max_memory=max_memory, playernr=0, discount=discount)
+        exp_replay = Ai(max_memory=max_memory, playernr=1, discount=discount)
 
         #     Train
         game_count = 0
@@ -199,7 +199,11 @@ if __name__ == "__main__":
                     # sometimes  guessing is better than predicting
                     # get next action
                     if np.random.rand() <= epsilon:
-                        action = random.randint(0, num_actions - 1)
+                        valid = False
+                        while not valid:
+                            action = random.randint(0, num_actions - 1)
+                            array_i, h, w = env.convert_action_to_move(action)
+                            valid = validate_move([env.rows, env.columns], array_i, h, w)
                     else:
                         q = model.predict(input_old)
                         action = np.argmax(q[0])
