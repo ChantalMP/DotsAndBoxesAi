@@ -165,6 +165,7 @@ if __name__ == "__main__":
     testing_model = False
 
     if not testing_model:
+
         exp_replay = Ai(max_memory=max_memory, playernr=1, discount=discount)
 
         #     Train
