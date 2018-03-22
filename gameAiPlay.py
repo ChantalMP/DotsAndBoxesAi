@@ -12,7 +12,7 @@ from keras.models import load_model
 import os.path
 
 #global non_valid_move_reward
-non_valid_move_reward = -50
+non_valid_move_reward = -5
 
 class GameExtended(Game):
     def __init__(self):
@@ -84,6 +84,7 @@ class GameExtended(Game):
         else:
             return self.get_player_score(playernr) - old_score
 
+
     def act(self, action, playernr):
         old_score = self.get_player_score(playernr)
         self._update_state(action, playernr)
@@ -145,9 +146,10 @@ if __name__ == "__main__":
     max_memory = 500
     hidden_size = 100
     batch_size = 50
-    learning_rate = 0.2
+    learning_rate = 0.1
     discount = 0.9
     model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
+    print(model_name)
     model_temp_name = "temp_" + model_name
 
     #     keras

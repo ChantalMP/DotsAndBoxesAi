@@ -1,6 +1,16 @@
 - model_name how many wins , how many lost, how many random
 
 temp_model_ep200000_mm500_hs100_nvr-10_lr0.2_d0.9:
+    Epoch 10000/99999 | Loss 1.0858
+    Ai Wins: 70, with 944 fields and 299 random moves
+    Random Wins: 23 with 443 fields
+    nearly not changed since Epoch 600
+
+model_ep200000_mm500_hs100_nvr-5_lr0.1_d0.9.h5:
+
+
+
+model_ep200000_mm500_hs100_nvr-10_lr0.1_d0.9.h5:
 
 
 
@@ -25,7 +35,13 @@ temp_model_ep200000_mm500_hs100_nvr1000_lr0.2_d0.9.h5:
     Ai Wins: 57, with 720 fields and 925 random moves
     Random Wins: 41 with 663 fields
 
-Zum Vergleich: -10 nach 1000:
+Zum Vergleich:
+-10 nach 1000:
 temp_model_ep200000_mm500_hs100_nvr-10_lr0.2_d0.9.h5:
     Ai Wins: 74, with 973 fields and 196 random moves
      Random Wins: 21 with 401 fields
+
+-5 nach 1000:
+temp_model_ep200000_mm500_hs100_nvr-5_lr0.2_d0.9.h5
+Ai Wins: 85, with 1115 fields and 214 random moves
+ Random Wins: 14 with 273 fields
