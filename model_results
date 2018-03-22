@@ -20,3 +20,4 @@ lr=0.1 else default
         Epoch 3500 | Loss 0.6133
     - non_valid_move_reward -5
     - non_valid_move_reward -2
+    -
