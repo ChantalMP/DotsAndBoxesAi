@@ -1,1 +1,31 @@
 - model_name how many wins , how many lost, how many random
+
+temp_model_ep200000_mm500_hs100_nvr-10_lr0.2_d0.9:
+
+
+
+valid move count extreme: 1000 Epochs
+50
+temp_model_ep200000_mm500_hs100_nvr50_lr0.2_d0.9.h5:
+     Ai Wins: 48, with 701 fields and 917 random moves
+     Random Wins: 48 with 671 fields
+
+-50
+temp_model_ep200000_mm500_hs100_nvr-50_lr0.2_d0.9.h5:
+    Ai Wins: 49, with 714 fields and 732 random moves
+    Random Wins: 50 with 646 fields
+
+-1000
+temp_model_ep200000_mm500_hs100_nvr-1000_lr0.2_d0.9.h5:
+    Ai Wins: 54, with 693 fields and 879 random moves
+    Random Wins: 43 with 659 fields
+
+1000:
+temp_model_ep200000_mm500_hs100_nvr1000_lr0.2_d0.9.h5:
+    Ai Wins: 57, with 720 fields and 925 random moves
+    Random Wins: 41 with 663 fields
+
+Zum Vergleich: -10 nach 1000:
+temp_model_ep200000_mm500_hs100_nvr-10_lr0.2_d0.9.h5:
+    Ai Wins: 74, with 973 fields and 196 random moves
+     Random Wins: 21 with 401 fields
