@@ -141,9 +141,9 @@ if __name__ == "__main__":
 
     epsilon = .1  # random moves
     num_actions = 40
-    epoch = 25000
+    epoch = 200000
     max_memory = 500
-    hidden_size = 200
+    hidden_size = 100
     batch_size = 50
     model_name = "model_na{}_ep{}_mm{}_hs{}_nvr{}.h5".format(num_actions, epoch, max_memory, hidden_size,non_valid_move_reward)
     model_temp_name = "temp_" + model_name
