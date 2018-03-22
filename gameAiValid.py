@@ -150,7 +150,7 @@ if __name__ == "__main__":
             if reward == 1 and predicted:
                 general_success += 1
             else:
-                if e > epoch/2 and predicted:
+                if e > int(epoch/2) and predicted:
                     print(field_to_str(env.rows,env.columns))
 
             # store experience

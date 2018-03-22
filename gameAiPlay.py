@@ -14,7 +14,7 @@ class GameExtended(Game):
     def __init__(self):
         super().__init__()
 
-    def convert_action_to_move(self,action):
+    def convert_action_to_move(self, action):
         array_i = 0
         w = 0
         h = 0
@@ -27,7 +27,7 @@ class GameExtended(Game):
                 array_i = 1 - array_i
         return array_i, h, w
 
-    def convert_input_array_to_field(self,input):
+    def convert_input_array_to_field(self, input):
         a = self.rows
         b = self.columns
         field = [a, b]
@@ -36,7 +36,7 @@ class GameExtended(Game):
             field[array_i][h][w] = input[i]
         return field
 
-    def convert_field_to_inputarray(self,field):
+    def convert_field_to_inputarray(self, field):
         # field = [rows, colomns]
         input = np.zeros(40)
         index = 0
@@ -56,16 +56,24 @@ class GameExtended(Game):
 
         return input
 
+    def convert_and_reshape_field_to_inputarray(self,field):
+        input_array = self.convert_field_to_inputarray(field)
+        r_input_array = input_array.reshape((1, -1))
+        return r_input_array
+
     # action = move
     def _update_state(self, action, playernr):
         array_i, height, width = self.convert_action_to_move(action)
         old_field = [self.rows, self.columns]
         self.success = self.make_move(array_i, height, width)
-        new_fields = self.newFullField(field, array_i, height, width)
+        if not self.success:
+            print("I had to play randomly :(")
+            array_i, height, width = self.random_move()
+        new_fields = newFullField([self.rows, self.columns], array_i, height, width)
         self.calculate_active_player(playernr)["Points"] += new_fields
 
     def _get_reward(self, playernr, old_score):
-        #return 1 if self.success else -1
+        # return 1 if self.success else -1
         if not self.success:
             return -5
         else:
@@ -75,7 +83,19 @@ class GameExtended(Game):
         old_score = self.get_player_score(playernr)
         self._update_state(action, playernr)
         reward = self._get_reward(playernr, old_score)
-        return self.create_train_data(), reward
+        gameover = game_over(self)
+        return self.convert_and_reshape_field_to_inputarray([self.rows,self.columns]), reward, gameover
+
+    def random_act(self, playernr):
+        success = False
+        while not success and self.free_edge_count() > 0:
+            action = random.randint(0, 40)
+            array_i, h, w = self.convert_action_to_move(action)
+            success = validate_move([self.rows, self.columns], array_i, h, w)
+            if success:
+                self._update_state(action, playernr)
+                gameover = game_over(self)
+                return self.convert_and_reshape_field_to_inputarray([self.rows,self.columns]), gameover
 
 
 class Ai:
@@ -83,10 +103,10 @@ class Ai:
         self.playernr = playernr
         self.max_memory = max_memory
         self.memory = list()
-        # self.discount = discount
+        self.discount = discount
 
-    def remember(self, states):
-        self.memory.append([states])
+    def remember(self, states, gameover):
+        self.memory.append([states, gameover])
         if len(self.memory) > self.max_memory:
             del self.memory[0]
 
@@ -98,10 +118,15 @@ class Ai:
         targets = np.zeros((inputs.shape[0], num_actions))
 
         for i, idx in enumerate(np.random.randint(0, len_memory, size=inputs.shape[0])):
-            state_t, action_t, reward_t = self.memory[idx][0]
+            state_t, action_t, reward_t, state_next = self.memory[idx][0]
+            gameover = self.memory[idx][1]
             inputs[i:i + 1] = state_t
             targets[i] = model.predict(state_t)[0]
-            targets[i, action_t] = reward_t
+            Q_sa = np.max(model.predict(state_next)[0])
+            if gameover:
+                targets[i, action_t] = reward_t
+            else:
+                targets[i, action_t] = reward_t + self.discount * Q_sa
 
         return inputs, targets
 
@@ -120,58 +145,69 @@ if __name__ == "__main__":
 
     model.add(Dense(hidden_size, input_shape=(40,), activation='relu'))
     model.add(Dense(hidden_size, activation='relu'))
-    model.add(Dense(num_actions))
+    model.add(Dense(num_actions))  # output layer
     model.compile(optimizer=sgd(lr=.2), loss='mse')
-    model = load_model("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size))
+    #model = load_model("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size))
 
     testing_model = False
 
     if not testing_model:
-        exp_replay = ValidAi(max_memory=max_memory)
+        exp_replay = Ai(max_memory=max_memory, playernr=0)
 
         #     Train
-        env = GameExtended()
-        env, input = env.create_train_data()
-        general_success = 0
         game_count = 0
         for e in range(epoch):
+            env = GameExtended()
+            input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
             loss = 0.
+            gameover = False
             predicted = False
-            # sometimes  guessing is better than predicting
-            if np.random.rand() <= epsilon:
-                action = random.randint(0, num_actions-1)
-            else:
-                q = model.predict(input)
-                action = np.argmax(q[0])
-                game_count += 1
-                predicted = True
 
-            (env_new, input_new), reward = env.act(action)
-            if reward == 1 and predicted:
-                general_success += 1
-            else:
-                if e > epoch/2 and predicted:
-                    print(field_to_str(env.rows,env.columns))
+            #print("starting game")
+            #print(field_to_str(env.rows, env.columns))
+            while not gameover:
 
-            # store experience
-            exp_replay.remember([input, action , reward])
-            input = input_new
-            env = env_new
-            # adapt model
-            inputs,targets = exp_replay.get_batch(model,batch_size=batch_size)
+                #AIMOVE
+                playernr = 1
+                input_old = input
+                # sometimes  guessing is better than predicting
+                # get next action
+                if np.random.rand() <= epsilon:
+                    action = random.randint(0, num_actions - 1)
+                else:
+                    q = model.predict(input_old)
+                    action = np.argmax(q[0])
+                    game_count += 1
+                    predicted = True
+                # apply action, get rewards and new state
+                input, reward, gameover = env.act(action, playernr)
+                # store experience
+                exp_replay.remember([input_old, action, reward, input], gameover)
+                # adapt model
+                inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
+                loss += model.train_on_batch(inputs, targets)
+                #print("AI PLAYED")
+                #print(field_to_str(env.rows, env.columns))
 
-            loss += model.train_on_batch(inputs,targets)
-            #print("Epoch {:03d}/99999 | Loss {:.4f} | Win count {}".format(e, loss, success_count))
+                if not gameover:
+                    #RANDOMMOVE
+                    playernr = 2
+                    input, gameover = env.random_act(playernr)
+                    #print("Random PLAYED")
+                    #print(field_to_str(env.rows, env.columns))
+
+            print("AI: ", env.player1["Points"], " Random: ", env.player2["Points"])
+            print("Epoch {:03d}/99999 | Loss {:.4f}".format(e, loss))
 
             if (e % 1000 == 0):
-                print("Epoch {:03d}/{} | Loss {:.4f}".format(e,epoch, loss))
-                print(float(general_success) / game_count, '% winning rate')
-                general_success = 0
-                game_count = 0
-                model.save("model_temp_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size),
-                           overwrite=True)
+                model.save(
+                    "model_temp_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size),
+                    overwrite=True)
 
-        model.save("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size), overwrite=False)
+        model.save("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size),
+                   overwrite=False)
+
+    """
     else:
         model = load_model("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size))
         env = GameExtended()
@@ -193,8 +229,4 @@ if __name__ == "__main__":
             success_count += 1
 
         print("successcount: ", success_count)
-
-
-
-
-
+    """

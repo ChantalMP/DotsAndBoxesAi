@@ -74,11 +74,11 @@ def setField(rows, columns, h, w):
     return rows, columns
 
 
-#test field left to given edge
+#test field right to given edgen
 #called when painting the vertical border
 def test_field_full(rows, columns, height, width):
     if width < len(columns):
-        if columns[height][width+1] and rows[height][width] == 1 and rows[height+1][width] == 1:
+        if columns[height][width] and columns[height][width+1] and rows[height][width] == 1 and rows[height+1][width] == 1:
                     return True
         else:
             return False

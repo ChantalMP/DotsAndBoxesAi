@@ -13,6 +13,7 @@ class Game:
         self.player2 = {"Name": "Player2", "Points": 0}
         self.whose_turn = random.randint(0, 1)
         self.field_arrays = [self.rows, self.columns]
+        self.obstacle_count = self._obstacle_count()
 
     def get_player_score(self, player_nr):
         if player_nr == 1:
@@ -24,7 +25,7 @@ class Game:
 
     def calculate_active_player(self, whose_turn):
 
-        if whose_turn == 0:
+        if whose_turn == 1:
             return self.player1
         else:
             return self.player2
@@ -44,6 +45,7 @@ class Game:
             h = random.randint(0, height + 1)
             i = random.randint(0, 2)
             success = self.make_move(i, h, w)
+        return i, h, w
 
     def n_random_moves(self , n):
         for i in range(0,n):
@@ -76,18 +78,17 @@ class Game:
                     continue
         return counter
 
-
-    def obstacle_count(self):
+    def _obstacle_count(self):
         c = 0
         for h in range(height):
             for w in range(width):
-                if test_field_full(self.field_arrays[0], self.field_arrays[1], h, w) == 1:
+                if test_field_full(self.field_arrays[0], self.field_arrays[1], h, w):
                     c += 1
         return c
 
     # print(print_Field(sefield_arrays[0], field_arrays[1]))
 
-    # obstaclenumber = obstacle_count()
+    # obstaclenumber = obstacle_count
     #
     # # main loop
     # # make user and ai move TODO

@@ -31,8 +31,13 @@ def validate_move(field_arrays, array_i, height, width):
     except:
         return False
 
-def game_over(obstacle_count , p1 , p2):
+def game_over(game):
+    obstacle_count = game.obstacle_count
+    p1 = game.player1["Points"]
+    p2 = game.player2["Points"]
     if obstacle_count + p1 + p2 == (width * height):
         return True
     else:
         return False
+
+
