@@ -65,5 +65,10 @@ lr=0.1 else default
         Random Wins: 16 with 384 fields
         Epoch 3500 | Loss 0.6133
     - non_valid_move_reward -5
+        Ai Wins: 79, with 1004 fields and 195 random moves
+        Random Wins: 18 with 363 fields
+        Epoch 4700 | Loss 0.2721
     - non_valid_move_reward -2
-    -
+        Ai Wins: 85, with 1043 fields and 231 random moves
+        Random Wins: 12 with 336 fields
+        Epoch 4700 | Loss 0.5103
