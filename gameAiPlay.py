@@ -1,5 +1,6 @@
 import tensorflow
 import numpy as np
+import keras
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.optimizers import sgd
@@ -13,6 +14,7 @@ from keras.models import load_model
 class GameExtended(Game):
     def __init__(self):
         super().__init__()
+        self.random_plays = 0
 
     def convert_action_to_move(self, action):
         array_i = 0
@@ -67,7 +69,7 @@ class GameExtended(Game):
         old_field = [self.rows, self.columns]
         self.success = self.make_move(array_i, height, width)
         if not self.success:
-            print("I had to play randomly :(")
+            self.random_plays += 1
             array_i, height, width = self.random_move()
         new_fields = newFullField([self.rows, self.columns], array_i, height, width)
         self.calculate_active_player(playernr)["Points"] += new_fields
@@ -131,6 +133,7 @@ class Ai:
         return inputs, targets
 
 
+
 if __name__ == "__main__":
 
     epsilon = .1  # random moves
@@ -148,7 +151,6 @@ if __name__ == "__main__":
     model.add(Dense(num_actions))  # output layer
     model.compile(optimizer=sgd(lr=.2), loss='mse')
     #model = load_model("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size))
-
     testing_model = False
 
     if not testing_model:
@@ -156,6 +158,10 @@ if __name__ == "__main__":
 
         #     Train
         game_count = 0
+        ai_wins = 0
+        random_wins = 0
+        ai_fields = 0
+        random_fields = 0
         for e in range(epoch):
             env = GameExtended()
             input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
@@ -185,7 +191,7 @@ if __name__ == "__main__":
                 exp_replay.remember([input_old, action, reward, input], gameover)
                 # adapt model
                 inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
-                loss += model.train_on_batch(inputs, targets)
+                loss += model.train_on_batch(inputs, targets )
                 #print("AI PLAYED")
                 #print(field_to_str(env.rows, env.columns))
 
@@ -196,13 +202,26 @@ if __name__ == "__main__":
                     #print("Random PLAYED")
                     #print(field_to_str(env.rows, env.columns))
 
-            print("AI: ", env.player1["Points"], " Random: ", env.player2["Points"])
-            print("Epoch {:03d}/99999 | Loss {:.4f}".format(e, loss))
+            current_ai_field = env.player1["Points"]
+            current_random_field = env.player2["Points"]
+            if current_ai_field > current_random_field:
+                ai_wins += 1
+            elif current_random_field > current_ai_field:
+                random_wins += 1
+            ai_fields += current_ai_field
+            random_fields += current_random_field
 
-            if (e % 1000 == 0):
+            if (e % 100 == 0):
                 model.save(
                     "model_temp_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size),
                     overwrite=True)
+                print("Ai Wins: {}, with {} fields and {} random moves\n Random Wins: {} with {} fields".format(ai_wins, ai_fields, env.random_plays, random_wins, random_fields))
+                ai_wins = 0
+                ai_fields = 0
+                random_fields = 0
+                random_wins = 0
+                env.random_plays = 0
+                print("Epoch {:03d}/99999 | Loss {:.4f}".format(e, loss))
 
         model.save("model_{}_{}_{}_{}_{}.h5".format(num_actions, epoch, max_memory, hidden_size, batch_size),
                    overwrite=False)
