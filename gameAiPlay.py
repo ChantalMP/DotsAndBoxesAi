@@ -12,7 +12,7 @@ from keras.models import load_model
 import os.path
 
 #global non_valid_move_reward
-non_valid_move_reward = -50
+non_valid_move_reward = -10
 
 class GameExtended(Game):
     def __init__(self):
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     max_memory = 500
     hidden_size = 100
     batch_size = 50
-    learning_rate = 0.2
+    learning_rate = 0.1
     discount = 0.9
     model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
     model_temp_name = "temp_" + model_name
@@ -164,6 +164,7 @@ if __name__ == "__main__":
 
     if not testing_model:
         exp_replay = Ai(max_memory=max_memory, playernr=0, discount=discount)
+        # we can add another ai here with a different playernr=2 for ai vs ai.
 
         #     Train
         game_count = 0
