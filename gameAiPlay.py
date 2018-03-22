@@ -12,7 +12,7 @@ from keras.models import load_model
 import os.path
 
 #global non_valid_move_reward
-non_valid_move_reward = -10
+non_valid_move_reward = -5
 
 class GameExtended(Game):
     def __init__(self):
@@ -82,7 +82,8 @@ class GameExtended(Game):
         if not self.success:
             return non_valid_move_reward
         else:
-            return self.get_player_score(playernr) - old_score
+            return -1*non_valid_move_reward + (self.get_player_score(playernr) - old_score)*2
+
 
     def act(self, action, playernr):
         old_score = self.get_player_score(playernr)
@@ -148,6 +149,7 @@ if __name__ == "__main__":
     learning_rate = 0.1
     discount = 0.9
     model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
+    print(model_name)
     model_temp_name = "temp_" + model_name
 
     #     keras
@@ -163,8 +165,7 @@ if __name__ == "__main__":
     testing_model = False
 
     if not testing_model:
-        exp_replay = Ai(max_memory=max_memory, playernr=0, discount=discount)
-        # we can add another ai here with a different playernr=2 for ai vs ai.
+        exp_replay = Ai(max_memory=max_memory, playernr=1, discount=discount)
 
         #     Train
         game_count = 0
@@ -198,7 +199,11 @@ if __name__ == "__main__":
                     # sometimes  guessing is better than predicting
                     # get next action
                     if np.random.rand() <= epsilon:
-                        action = random.randint(0, num_actions - 1)
+                        valid = False
+                        while not valid:
+                            action = random.randint(0, num_actions - 1)
+                            array_i, h, w = env.convert_action_to_move(action)
+                            valid = validate_move([env.rows, env.columns], array_i, h, w)
                     else:
                         q = model.predict(input_old)
                         action = np.argmax(q[0])
