@@ -145,7 +145,9 @@ if __name__ == "__main__":
     max_memory = 500
     hidden_size = 100
     batch_size = 50
-    model_name = "model_na{}_ep{}_mm{}_hs{}_nvr{}.h5".format(num_actions, epoch, max_memory, hidden_size,non_valid_move_reward)
+    learning_rate = 0.2
+    discount = 0.9
+    model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
     model_temp_name = "temp_" + model_name
 
     #     keras
@@ -154,14 +156,14 @@ if __name__ == "__main__":
     model.add(Dense(hidden_size, input_shape=(40,), activation='relu'))
     model.add(Dense(hidden_size, activation='relu'))
     model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=sgd(lr=.2), loss='mse')
+    model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
     if os.path.isfile(model_name):
         model = load_model(model_name)
 
     testing_model = False
 
     if not testing_model:
-        exp_replay = Ai(max_memory=max_memory, playernr=0)
+        exp_replay = Ai(max_memory=max_memory, playernr=0, discount=discount)
 
         #     Train
         game_count = 0
