@@ -12,7 +12,7 @@ from keras.models import load_model
 import os.path
 
 #global non_valid_move_reward
-non_valid_move_reward = -10
+non_valid_move_reward = -50
 
 class GameExtended(Game):
     def __init__(self):
@@ -261,7 +261,7 @@ if __name__ == "__main__":
                 random_fields = 0
                 random_wins = 0
                 ai_played_random_count = 0
-                print("Epoch {:03d}/99999 | Loss {:.4f}".format(e, loss))
+                print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
         model.save(model_name, overwrite=False)
 
