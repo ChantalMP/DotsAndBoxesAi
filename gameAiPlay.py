@@ -10,6 +10,9 @@ import random
 from gameView import width, height, field_to_str
 from keras.models import load_model
 import os.path
+import tensorflow as tf
+from keras.callbacks import TensorBoard
+
 
 #global non_valid_move_reward
 non_valid_move_reward = -5
@@ -136,6 +139,23 @@ class Ai:
 
         return inputs, targets
 
+# tensorboard logging method simplified for our project
+def write_log(callback,train_loss,ai_wins,random_moves, batch_no):
+        summary = tf.Summary()
+        #add train_loss
+        summary_value = summary.value.add()
+        summary_value.simple_value = train_loss
+        summary_value.tag = "train_loss"
+        # add ai_wins
+        summary_value = summary.value.add()
+        summary_value.simple_value = ai_wins
+        summary_value.tag = "ai_wins"
+        # add random_moves
+        summary_value = summary.value.add()
+        summary_value.simple_value = random_moves
+        summary_value.tag = "random_moves"
+        callback.writer.add_summary(summary, batch_no)
+        callback.writer.flush()
 
 
 if __name__ == "__main__":
@@ -144,10 +164,11 @@ if __name__ == "__main__":
     num_actions = 40
     epoch = 200000
     max_memory = 500
-    hidden_size = 100
+    hidden_size = 128
     batch_size = 50
     learning_rate = 0.1
-    discount = 0.9
+    # TODO , learning_rate 0.01 test
+    discount = 0.5
     model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
     print(model_name)
     model_temp_name = "temp_" + model_name
@@ -160,7 +181,12 @@ if __name__ == "__main__":
     model.add(Dense(num_actions))  # output layer
     model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
     if os.path.isfile(model_name):
-        model = load_model(model_name)
+        model = load_model(model_temp_name)
+
+    # logging tensorboard --host 127.0.0.1 --logdir=./logs Works on mac
+    log_path = './logs/' + model_name
+    callback = TensorBoard(log_path)
+    callback.set_model(model)
 
     testing_model = False
 
@@ -247,8 +273,11 @@ if __name__ == "__main__":
                 # store experience
                 exp_replay.remember([input_old, action, reward, input], gameover)
                 # adapt model
-                inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
+                inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)#are we getting only one batch
                 loss += model.train_on_batch(inputs, targets)
+
+            #logging after each game saving with the epoch number.
+            write_log(callback,train_loss=loss,ai_wins=ai_wins,random_moves=ai_played_random_count, batch_no=e)
 
             current_ai_field = env.player1["Points"]
             current_random_field = env.player2["Points"]
