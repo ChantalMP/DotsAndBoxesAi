@@ -183,7 +183,7 @@ if __name__ == "__main__":
     if os.path.isfile(model_name):
         model = load_model(model_temp_name)
 
-    # logging tensorboard --host 127.0.0.1 --logdir=./logs Works on mac
+    # logging tensorboard --host 127.0.0.1 --logdir=./logs Works on mac logs are saved on the project directory
     log_path = './logs/' + model_name
     callback = TensorBoard(log_path)
     callback.set_model(model)
