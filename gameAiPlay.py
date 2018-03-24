@@ -164,20 +164,25 @@ if __name__ == "__main__":
     num_actions = 40
     epoch = 200000
     max_memory = 500
-    hidden_size = 4096
+    hidden_size_0 = 128
+    hidden_size_1 = 256
+    hidden_size_2 = 512
     batch_size = 50
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
-    discount = 0.1
-    model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
+    discount = 0.3
+    model_name = "mm{}_hsmin{}_hsmax{}_nvr{}_lr{}_d{}_hl{}.h5".format(max_memory, hidden_size_0, hidden_size_2,non_valid_move_reward,learning_rate,discount, "5")
     print(model_name)
     model_temp_name = "temp_" + model_name
 
     #     keras
     model = Sequential()
 
-    model.add(Dense(hidden_size, input_shape=(40,), activation='relu'))
-    model.add(Dense(hidden_size, activation='relu'))
+    model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
+    model.add(Dense(hidden_size_1, activation='relu'))
+    model.add(Dense(hidden_size_2, activation='relu'))
+    model.add(Dense(hidden_size_1, activation='relu'))
+    model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
     model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
     if os.path.isfile(model_temp_name):
