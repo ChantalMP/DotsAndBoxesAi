@@ -54,8 +54,6 @@ temp_model_ep200000_mm500_hs100_nvr-5_lr0.2_d0.9.h5
 Ai Wins: 85, with 1115 fields and 214 random moves
  Random Wins: 14 with 273 fields
 
---------ALL THESE ARE AGAINST RANDOM------------------
-
 lr=0.2 else default
     - non_valid_move_reward -10
         Ai Wins: 63, with 908 fields and 195 random moves
