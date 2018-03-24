@@ -122,13 +122,16 @@ lr=0.1 else default
 - hidden_size=512 non_valid -2 discount 0.1
     - i lost the result, but was very similar to hidden_size=256
 
--------overnight---------
+-------overnight--------- tested more frequently print e%50 instead of 100 all trained till converged
 - hidden_size=2048 non_valid -2 discount 0.9
-    ----notfinished----
+    Ai Wins: 31, with 438 fields and 352 random moves
+    Random Wins: 18 with 250 fields
 - hidden_size=2048 non_valid -2 discount 0.5
-    ----notfinished----
+    Ai Wins: 48, with 565 fields and 40 random moves
+    Random Wins: 1 with 113 fields
 - hidden_size=2048 non_valid -2 discount 0.1
-   ----notfinished----
+    Ai Wins: 43, with 545 fields and 28 random moves
+    Random Wins: 6 with 139 fields
 - hidden_size=4096 non_valid -2 discount 0.9
     ----notfinished----
 - hidden_size=4096 non_valid -2 discount 0.5
@@ -136,5 +139,5 @@ lr=0.1 else default
 - hidden_size=4096 non_valid -2 discount 0.1
     ----notfinished----
 
-
+-----TIME TO IMPLEMENT AI VS AI----------
 

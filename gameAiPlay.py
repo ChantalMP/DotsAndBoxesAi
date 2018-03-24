@@ -15,7 +15,7 @@ from keras.callbacks import TensorBoard
 
 
 #global non_valid_move_reward
-non_valid_move_reward = -5
+non_valid_move_reward = -2
 
 class GameExtended(Game):
     def __init__(self):
@@ -164,11 +164,11 @@ if __name__ == "__main__":
     num_actions = 40
     epoch = 200000
     max_memory = 500
-    hidden_size = 128
+    hidden_size = 4096
     batch_size = 50
-    learning_rate = 0.1
+    learning_rate = 0.01
     # TODO , learning_rate 0.01 test
-    discount = 0.5
+    discount = 0.1
     model_name = "model_ep{}_mm{}_hs{}_nvr{}_lr{}_d{}.h5".format(epoch, max_memory, hidden_size,non_valid_move_reward,learning_rate,discount)
     print(model_name)
     model_temp_name = "temp_" + model_name
@@ -180,10 +180,11 @@ if __name__ == "__main__":
     model.add(Dense(hidden_size, activation='relu'))
     model.add(Dense(num_actions))  # output layer
     model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
-    if os.path.isfile(model_name):
+    if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
+        print("model_loaded")
 
-    # logging tensorboard --host 127.0.0.1 --logdir=./logs Works on mac logs are saved on the project directory
+    # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- Works on mac logs are saved on the project directory
     log_path = './logs/' + model_name
     callback = TensorBoard(log_path)
     callback.set_model(model)
@@ -277,7 +278,7 @@ if __name__ == "__main__":
                 loss += model.train_on_batch(inputs, targets)
 
             #logging after each game saving with the epoch number.
-            write_log(callback,train_loss=loss,ai_wins=ai_wins,random_moves=ai_played_random_count, batch_no=e)
+
 
             current_ai_field = env.player1["Points"]
             current_random_field = env.player2["Points"]
@@ -289,9 +290,10 @@ if __name__ == "__main__":
             random_fields += current_random_field
             ai_played_random_count += env.random_plays
 
-            if (e % 100 == 0):
+            if e % 50 == 0 and e != 0:
                 model.save(model_temp_name,overwrite=True)
                 print("Ai Wins: {}, with {} fields and {} random moves\n Random Wins: {} with {} fields".format(ai_wins, ai_fields, ai_played_random_count, random_wins, random_fields))
+                write_log(callback, train_loss=loss, ai_wins=ai_wins, random_moves=ai_played_random_count, batch_no=e)
                 ai_wins = 0
                 ai_fields = 0
                 random_fields = 0
