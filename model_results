@@ -6,12 +6,20 @@ temp_model_ep200000_mm500_hs100_nvr-10_lr0.2_d0.9:
     Random Wins: 23 with 443 fields
     nearly not changed since Epoch 600
 
-model_ep200000_mm500_hs100_nvr-5_lr0.1_d0.9.h5:
+....................
+With two hidden layers, size 128
+non valid reward -5
+model_ep200000_mm500_hs128_nvr-5_lr0.1_d0.5.h5
+    Epoch 10000 | Loss 1.0446
+    Ai Wins: 85, with 1080 fields and 94 random moves
+    Random Wins: 11 with 283 fields
 
-
-
-model_ep200000_mm500_hs100_nvr-10_lr0.1_d0.9.h5:
-
+non valid reward -2
+model_ep200000_mm500_hs128_nvr-2_lr0.1_d0.5.h5
+    Epoch 10100 | Loss 0.7227
+    Ai Wins: 87, with 1150 fields and 87 random moves
+    Random Wins: 11 with 232 fields
+....................
 
 
 valid move count extreme: 1000 Epochs
@@ -47,6 +55,33 @@ Ai Wins: 85, with 1115 fields and 214 random moves
  Random Wins: 14 with 273 fields
 
 --------ALL THESE ARE AGAINST RANDOM------------------
+
+lr=0.2 else default
+    - non_valid_move_reward -10
+        Ai Wins: 63, with 908 fields and 195 random moves
+        Random Wins: 29 with 452 fields
+        Epoch 2000 | Loss 0.6091
+    - non_valid_move_reward -5
+        Ai Wins: 79, with 1009 fields and 235 random moves
+        Random Wins: 18 with 365 fields
+        Epoch 2000 | Loss 0.6714
+    - non_valid_move_reward -2
+        Ai Wins: 78, with 1047 fields and 282 random moves
+        Random Wins: 21 with 338 fields
+        Epoch 2000 | Loss 0.3770
+lr=0.1 else default
+    - non_valid_move_reward -10
+        Ai Wins: 80, with 992 fields and 193 random moves
+        Random Wins: 16 with 384 fields
+        Epoch 3500 | Loss 0.6133
+    - non_valid_move_reward -5
+        Ai Wins: 79, with 1004 fields and 195 random moves
+        Random Wins: 18 with 363 fields
+        Epoch 4700 | Loss 0.2721
+    - non_valid_move_reward -2
+        Ai Wins: 85, with 1043 fields and 231 random moves
+        Random Wins: 12 with 336 fields
+        Epoch 4700 | Loss 0.5103
 
 lr=0.2 else default
     - non_valid_move_reward -10
@@ -122,16 +157,13 @@ lr=0.1 else default
 - hidden_size=512 non_valid -2 discount 0.1
     - i lost the result, but was very similar to hidden_size=256
 
--------overnight--------- tested more frequently print e%50 instead of 100 all trained till converged
+-------overnight---------
 - hidden_size=2048 non_valid -2 discount 0.9
-    Ai Wins: 31, with 438 fields and 352 random moves
-    Random Wins: 18 with 250 fields
+    ----notfinished----
 - hidden_size=2048 non_valid -2 discount 0.5
-    Ai Wins: 48, with 565 fields and 40 random moves
-    Random Wins: 1 with 113 fields
+    ----notfinished----
 - hidden_size=2048 non_valid -2 discount 0.1
-    Ai Wins: 43, with 545 fields and 28 random moves
-    Random Wins: 6 with 139 fields
+   ----notfinished----
 - hidden_size=4096 non_valid -2 discount 0.9
     ----notfinished----
 - hidden_size=4096 non_valid -2 discount 0.5
@@ -139,5 +171,5 @@ lr=0.1 else default
 - hidden_size=4096 non_valid -2 discount 0.1
     ----notfinished----
 
------TIME TO IMPLEMENT AI VS AI----------
+
 
