@@ -85,7 +85,8 @@ class GameExtended(Game):
         if not self.success:
             return non_valid_move_reward
         else:
-            return -1*non_valid_move_reward + (self.get_player_score(playernr) - old_score)*2
+            reward = max((-1*non_valid_move_reward + (self.get_player_score(playernr) - old_score)*2), (non_valid_move_reward+1))
+            return reward
 
 
     def act(self, action, playernr):
