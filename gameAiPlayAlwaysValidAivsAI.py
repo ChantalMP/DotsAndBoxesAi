@@ -13,7 +13,7 @@ import os.path
 import tensorflow as tf
 from keras.callbacks import TensorBoard
 
-verbose = False
+verbose = True
 
 class GameExtended(Game):
     def __init__(self):
@@ -154,9 +154,10 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
 def find_best(q, env):
     action = np.argmax(q)
     array_i,h,w = env.convert_action_to_move(action)
+    tmp = np.copy(q)
     while not validate_move([env.rows, env.columns], array_i,h,w):
-        q[action] = -100000000000
-        action = np.argmax(q)
+        tmp[action] = -17
+        action = np.argmax(tmp)
         array_i,h,w = env.convert_action_to_move(action)
     return action
 
@@ -219,7 +220,7 @@ def ai_player_move(input, gameover, ai:Ai, model , loss):
 
 
 def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameover, batch_size):
-    reward = env._get_reward(1, old_score)
+    reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
     # adapt model
