@@ -1,0 +1,13 @@
+WITH MAX(valid+1, score)
+ca. 28000 Epochen
+mm500_hsmin128_hsmax512_nvr-5_lr0.01_d0.5_hl5NEW_REWARD.h5
+Ai Wins: 49, with 585 fields and 19 random moves
+ Random Wins: 1 with 104 fields
+
+mm500_hsmin128_hsmax256_nvr-5_lr0.01_d0.5_hl3NEW_REWARD.h5
+Ai Wins: 48, 19 random moves 10
+
+
+WITHOUT POSSIBLE RANDOM MOVES
+mm500_hsmin128_hsmax256_nvr-5_lr0.01_d0.5_hl3NEW_ALWAZYVALID.h5
+    

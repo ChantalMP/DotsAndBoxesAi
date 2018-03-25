@@ -15,7 +15,7 @@ from keras.callbacks import TensorBoard
 
 
 #global non_valid_move_reward
-non_valid_move_reward = -2
+non_valid_move_reward = -5
 
 class GameExtended(Game):
     def __init__(self):
@@ -75,6 +75,7 @@ class GameExtended(Game):
         old_field = [self.rows, self.columns]
         self.success = self.make_move(array_i, height, width)
         if not self.success:
+            print("I played randomly :(", array_i, ", ", height, ", ", width, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHhhhhhhhhhhhhhhhh")
             self.random_plays += 1
             array_i, height, width = self.random_move()
         new_fields = newFullField([self.rows, self.columns], array_i, height, width)
@@ -82,11 +83,12 @@ class GameExtended(Game):
 
     def _get_reward(self, playernr, old_score):
         # return 1 if self.success else -1
-        if not self.success:
-            return non_valid_move_reward
-        else:
-            reward = max((-1*non_valid_move_reward + (self.get_player_score(playernr) - old_score)*2), (non_valid_move_reward+1))
-            return reward
+        # if not self.success:
+        #     return non_valid_move_reward
+        # else:
+        #     reward = max((-1*non_valid_move_reward + (self.get_player_score(playernr) - old_score)*2), (non_valid_move_reward+3))
+        #     return reward
+        return (self.get_player_score(playernr) - old_score)
 
 
     def act(self, action, playernr):
@@ -158,6 +160,14 @@ def write_log(callback,train_loss,ai_wins,random_moves, batch_no):
         callback.writer.add_summary(summary, batch_no)
         callback.writer.flush()
 
+def find_best(q, env):
+    action = np.argmax(q)
+    array_i,h,w = env.convert_action_to_move(action)
+    while not validate_move([env.rows, env.columns], array_i,h,w):
+        q[action] = -100000000000
+        action = np.argmax(q)
+        array_i,h,w = env.convert_action_to_move(action)
+    return action
 
 if __name__ == "__main__":
 
@@ -167,12 +177,11 @@ if __name__ == "__main__":
     max_memory = 500
     hidden_size_0 = 128
     hidden_size_1 = 256
-    hidden_size_2 = 512
     batch_size = 50
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
-    discount = 0.3
-    model_name = "mm{}_hsmin{}_hsmax{}_nvr{}_lr{}_d{}_hl{}.h5".format(max_memory, hidden_size_0, hidden_size_2,non_valid_move_reward,learning_rate,discount, "5")
+    discount = 0.5
+    model_name = "mm{}_hsmin{}_hsmax{}_nvr{}_lr{}_d{}_hl{}NEW_ALWAZYVALID.h5".format(max_memory, hidden_size_0, hidden_size_1,non_valid_move_reward,learning_rate,discount, "3")
     print(model_name)
     model_temp_name = "temp_" + model_name
 
@@ -180,8 +189,6 @@ if __name__ == "__main__":
     model = Sequential()
 
     model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
-    model.add(Dense(hidden_size_1, activation='relu'))
-    model.add(Dense(hidden_size_2, activation='relu'))
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
@@ -239,8 +246,10 @@ if __name__ == "__main__":
                             array_i, h, w = env.convert_action_to_move(action)
                             valid = validate_move([env.rows, env.columns], array_i, h, w)
                     else:
+
                         q = model.predict(input_old)
-                        action = np.argmax(q[0])
+                        #action = np.argmax(q[0])
+                        action = find_best(q[0], env)
                         game_count += 1
                         predicted = True
                     # apply action, get rewards and new state
