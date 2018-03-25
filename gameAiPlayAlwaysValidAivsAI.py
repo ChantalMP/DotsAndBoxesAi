@@ -160,7 +160,9 @@ def find_best(q, env):
         array_i,h,w = env.convert_action_to_move(action)
     return action
 
-def random_player_move(input, gameover, playernr):
+def random_player_move(gameover, playernr=2):
+    input = False
+
     random_should_play = True
     while not gameover and random_should_play:
         random_should_play = False
@@ -176,7 +178,11 @@ def random_player_move(input, gameover, playernr):
 
     return input, gameover
 
-def ai_player_move(input, gameover, action, ai:Ai, model, old_score, input_old):
+def ai_player_move(input, gameover, ai:Ai, model):
+    action = False
+    old_score = False
+    input_old = False
+
     ai_should_play = True
     while ai_should_play and not gameover:
         ai_should_play = False
@@ -192,7 +198,6 @@ def ai_player_move(input, gameover, action, ai:Ai, model, old_score, input_old):
                 array_i, h, w = env.convert_action_to_move(action)
                 valid = validate_move([env.rows, env.columns], array_i, h, w)
         else:
-
             q = model.predict(input_old)
             action = find_best(q[0], env)
             predicted = True
@@ -268,28 +273,38 @@ if __name__ == "__main__":
             loss = 0.
             gameover = False
             predicted = False
-            old_score = False
-            input_old = False
-            action = False
-
+            old_score_1 = False
+            input_old_1 = False
+            action_1 = False
             input_1 = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
+            old_score_2 = False
+            input_old_2 = False
+            action_2 = False
+            input_2 = False
 
             if verbose:
                 print("starting game")
                 print(field_to_str(env.rows, env.columns))
             # do we need this, i think it does not work otherwise.
             # input_old = input
+            ai_2_played = False
+
+            #input_2 = output_1 and other way round
             while not gameover:
                 #AIMOVE
-                input_1, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input, gameover, action, ai_player_1, model, old_score, input_old)
+                input_2, gameover, ai_should_play, old_score_1, input_old_1, action_1 = ai_player_move(input_1, gameover, ai_player_1, model)
                 if ai_should_play:
-                    loss = evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
+                    loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_2, gameover, batch_size)
+                elif not ai_should_play and ai_2_played:
+                    loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_2, gameover,batch_size)
 
-                input, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input, gameover, action, ai_player_2, model, old_score, input_old)
-                if ai_should_play:
-                    loss = evaluate_ai(loss, ai_player_2, model, old_score, input_old, action, input, gameover, batch_size)
-                else:
-                    loss = evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
+                if not gameover:
+                    input_1, gameover, ai_should_play, old_score_2, input_old_2, action_2 = ai_player_move(input_2, gameover, ai_player_2, model)
+                    ai_2_played = True
+                    if ai_should_play:
+                        loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_1, gameover, batch_size)
+                    else:
+                        loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover, batch_size)
 
                 # RANDOMMOVE
                 #input, gameover = random_player_move(input, gameover, playernr=3)
@@ -317,11 +332,11 @@ if __name__ == "__main__":
                 while not gameover:
                     # AIMOVE
                     input_old = input
-                    input, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input,gameover,action,ai_player_1,model,old_score,input_old)
+                    input, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input_1,gameover,ai_player_1,model)
                     if ai_should_play:
                         loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
                     # RANDOMMOVE
-                    input, gameover =random_player_move(input,gameover,playernr=2)
+                    input, gameover = random_player_move(input,gameover,playernr=2)
                     loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
 
                 # logging after each game saving with the epoch number.
