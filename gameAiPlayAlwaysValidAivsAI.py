@@ -13,6 +13,8 @@ import os.path
 import tensorflow as tf
 from keras.callbacks import TensorBoard
 
+verbose = False
+
 class GameExtended(Game):
     def __init__(self):
         super().__init__()
@@ -158,6 +160,67 @@ def find_best(q, env):
         array_i,h,w = env.convert_action_to_move(action)
     return action
 
+def random_player_move(input, gameover, playernr):
+    random_should_play = True
+    while not gameover and random_should_play:
+        random_should_play = False
+        playernr = playernr
+        old_points = env.player2["Points"]
+        input, gameover = env.random_act(playernr)
+        new_points = env.player2["Points"]
+        if new_points > old_points:
+            random_should_play = True
+        if verbose:
+            print("Random PLAYED")
+            print(field_to_str(env.rows, env.columns))
+
+    return input, gameover
+
+def ai_player_move(input, gameover, action, ai:Ai, model, old_score, input_old):
+    ai_should_play = True
+    while ai_should_play and not gameover:
+        ai_should_play = False
+
+        playernr = ai.playernr
+        input_old = input
+        # sometimes  guessing is better than predicting
+        # get next action
+        if np.random.rand() <= epsilon:
+            valid = False
+            while not valid:
+                action = random.randint(0, num_actions - 1)
+                array_i, h, w = env.convert_action_to_move(action)
+                valid = validate_move([env.rows, env.columns], array_i, h, w)
+        else:
+
+            q = model.predict(input_old)
+            action = find_best(q[0], env)
+            predicted = True
+        # apply action, get rewards and new state
+        old_points = env.player1["Points"]
+        input, old_score, gameover = env.act(action, playernr)
+        new_points = env.player1["Points"]
+        if new_points > old_points:
+            ai_should_play = True
+        if verbose:
+            print("AI PLAYED")
+            print(field_to_str(env.rows, env.columns))
+
+    return input, gameover, ai_should_play, old_score, input_old, action
+
+
+def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameover, batch_size):
+    reward = env._get_reward(1, old_score)
+    # store experience
+    ai.remember([input_old, action, reward, input], gameover)
+    # adapt model
+    inputs, targets = ai.get_batch(model, batch_size=batch_size)
+    loss += model.train_on_batch(inputs, targets)
+
+    return loss
+
+
+
 if __name__ == "__main__":
 
     epsilon = .1  # random moves
@@ -170,7 +233,7 @@ if __name__ == "__main__":
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}NEW_ALWAZYVALID.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3")
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}AIVSAI.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3")
     print(model_name)
     model_temp_name = "temp_" + model_name
 
@@ -195,7 +258,8 @@ if __name__ == "__main__":
 
     if not testing_model:
 
-        exp_replay = Ai(max_memory=max_memory, playernr=1, discount=discount)
+        ai_player_1 = Ai(max_memory=max_memory, playernr=1, discount=discount)
+        ai_player_2 = Ai(max_memory=max_memory, playernr=2, discount=discount)
 
         #     Train
         game_count = 0
@@ -205,92 +269,36 @@ if __name__ == "__main__":
         random_fields = 0
         for e in range(epoch):
             env = GameExtended()
-            input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
             loss = 0.
             gameover = False
             predicted = False
-            verbose = False
             old_score = False
             input_old = False
             action = False
+
+            input_1 = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
 
             if verbose:
                 print("starting game")
                 print(field_to_str(env.rows, env.columns))
             while not gameover:
                 #AIMOVE
-                ai_should_play = True
-                while ai_should_play and not gameover:
-                    ai_should_play = False
+                input_1, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input, gameover, action, ai_player_1, model, old_score, input_old)
+                if ai_should_play:
+                    loss = evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
+                else:
+                    loss = evaluate_ai(loss, ai_player_2, model,  old_score, input_old, action, input, gameover, batch_size)
 
-                    playernr = 1
-                    input_old = input
-                    # sometimes  guessing is better than predicting
-                    # get next action
-                    if np.random.rand() <= epsilon:
-                        valid = False
-                        while not valid:
-                            action = random.randint(0, num_actions - 1)
-                            array_i, h, w = env.convert_action_to_move(action)
-                            valid = validate_move([env.rows, env.columns], array_i, h, w)
-                    else:
-
-                        q = model.predict(input_old)
-                        action = find_best(q[0], env)
-                        game_count += 1
-                        predicted = True
-                    # apply action, get rewards and new state
-                    old_points = env.player1["Points"]
-                    input, old_score, gameover = env.act(action, playernr)
-                    new_points = env.player1["Points"]
-                    if new_points > old_points:
-                        ai_should_play = True
-                    if verbose:
-                        print("AI PLAYED")
-                        print(field_to_str(env.rows, env.columns))
-
-                    if ai_should_play:
-                        reward = env._get_reward(1, old_score)
-                        # store experience
-                        exp_replay.remember([input_old, action, reward, input], gameover)
-                        # adapt model
-                        inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)
-                        loss += model.train_on_batch(inputs, targets)
+                input, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input, gameover, action, ai_player_2, model, old_score, input_old)
+                if ai_should_play:
+                    loss = evaluate_ai(loss, ai_player_2, model, old_score, input_old, action, input, gameover, batch_size)
+                else:
+                    loss = evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
 
                 # RANDOMMOVE
-                random_should_play = True
-                while not gameover and random_should_play:
-                    random_should_play = False
-                    playernr = 2
-                    old_points = env.player2["Points"]
-                    input, gameover = env.random_act(playernr)
-                    new_points = env.player2["Points"]
-                    if new_points > old_points:
-                        random_should_play = True
-                    if verbose:
-                        print("Random PLAYED")
-                        print(field_to_str(env.rows, env.columns))
-
-                #after random has played AI can learn
-                reward = env._get_reward(1, old_score)
-                # store experience
-                exp_replay.remember([input_old, action, reward, input], gameover)
-                # adapt model
-                inputs, targets = exp_replay.get_batch(model, batch_size=batch_size)#are we getting only one batch
-                loss += model.train_on_batch(inputs, targets)
+                #input, gameover = random_player_move(input, gameover, playernr=3)
 
             #logging after each game saving with the epoch number.
-
-
-            current_ai_field = env.player1["Points"]
-            current_random_field = env.player2["Points"]
-            if current_ai_field > current_random_field:
-                ai_wins += 1
-            elif current_random_field > current_ai_field:
-                random_wins += 1
-            ai_fields += current_ai_field
-            random_fields += current_random_field
-
             if e % 50 == 0 and e != 0:
                 model.save(model_temp_name,overwrite=True)
                 print("Ai Wins: {}, with {} fields and {} random moves\n Random Wins: {} with {} fields".format(ai_wins, ai_fields, ai_played_random_count, random_wins, random_fields))
@@ -303,27 +311,3 @@ if __name__ == "__main__":
                 print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
         model.save(model_name, overwrite=False)
-
-    """
-    else:
-        model = load_model(model_name)
-        env = GameExtended()
-        success_count = 0
-        for i in range(1000):
-
-            env , input_array = env.create_train_data()
-            field = env.convert_input_array_to_field(input_array.reshape(-1,1))
-            print(field_to_str(field[0], field[1]))
-
-            prediction = model.predict(input_array)
-            action = np.argmax(prediction[0])
-
-            env._update_state(action)
-
-            print(env.convert_action_to_move(action))
-            print(field_to_str(env.rows,env.columns))
-            print(env.success)
-            success_count += 1
-
-        print("successcount: ", success_count)
-    """
