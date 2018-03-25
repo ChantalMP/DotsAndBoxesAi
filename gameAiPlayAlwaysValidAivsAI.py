@@ -160,7 +160,7 @@ def find_best(q, env):
         array_i,h,w = env.convert_action_to_move(action)
     return action
 
-def random_player_move(gameover, playernr=2):
+def random_player_move(gameover, playernr):
     input = False
 
     random_should_play = True
@@ -239,17 +239,18 @@ if __name__ == "__main__":
     # TODO , learning_rate 0.01 test
     discount = 0.5
     model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}AIVSAI.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3")
+    model_name = "mm500_hsmin128_hsmax256_nvr-5_lr0.01_d0.5_hl3NEW_ALWAZYVALID_COPY_AIVSAI.h5"
     print(model_name)
     model_temp_name = "temp_" + model_name
 
     #     keras
     model = Sequential()
 
-    model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
-    model.add(Dense(hidden_size_1, activation='relu'))
-    model.add(Dense(hidden_size_0, activation='relu'))
-    model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
+    # model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
+    # model.add(Dense(hidden_size_1, activation='relu'))
+    # model.add(Dense(hidden_size_0, activation='relu'))
+    # model.add(Dense(num_actions))  # output layer
+    # model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
         print("model_loaded")
@@ -306,9 +307,6 @@ if __name__ == "__main__":
                     else:
                         loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover, batch_size)
 
-                # RANDOMMOVE
-                #input, gameover = random_player_move(input, gameover, playernr=3)
-
             #logging after each game saving with the epoch number.
             if e % 50 == 0 and e != 0:
                 # play it against random
@@ -336,8 +334,9 @@ if __name__ == "__main__":
                     if ai_should_play:
                         loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
                     # RANDOMMOVE
-                    input, gameover = random_player_move(input,gameover,playernr=2)
-                    loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
+                    if not gameover:
+                        input, gameover = random_player_move(gameover,2)
+                        loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
 
                 # logging after each game saving with the epoch number.
                 current_ai_field = env.player1["Points"]
