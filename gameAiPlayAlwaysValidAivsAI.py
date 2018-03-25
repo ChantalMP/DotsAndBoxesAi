@@ -182,6 +182,7 @@ def ai_player_move(input, gameover, ai:Ai, model):
     action = False
     old_score = False
     input_old = False
+    active_player = env.player1 if ai.playernr == 1 else env.player2
 
     ai_should_play = True
     while ai_should_play and not gameover:
@@ -202,13 +203,13 @@ def ai_player_move(input, gameover, ai:Ai, model):
             action = find_best(q[0], env)
             predicted = True
         # apply action, get rewards and new state
-        old_points = env.player1["Points"]
+        old_points = active_player["Points"]
         input, old_score, gameover = env.act(action, playernr)
-        new_points = env.player1["Points"]
+        new_points = active_player["Points"]
         if new_points > old_points:
             ai_should_play = True
         if verbose:
-            print("AI PLAYED")
+            print("AI {} PLAYED".format(ai.playernr))
             print(field_to_str(env.rows, env.columns))
 
     return input, gameover, ai_should_play, old_score, input_old, action
@@ -239,18 +240,17 @@ if __name__ == "__main__":
     # TODO , learning_rate 0.01 test
     discount = 0.5
     model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}AIVSAI.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3")
-    model_name = "mm500_hsmin128_hsmax256_nvr-5_lr0.01_d0.5_hl3NEW_ALWAZYVALID_COPY_AIVSAI.h5"
     print(model_name)
     model_temp_name = "temp_" + model_name
 
     #     keras
     model = Sequential()
 
-    # model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
-    # model.add(Dense(hidden_size_1, activation='relu'))
-    # model.add(Dense(hidden_size_0, activation='relu'))
-    # model.add(Dense(num_actions))  # output layer
-    # model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
+    model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
+    model.add(Dense(hidden_size_1, activation='relu'))
+    model.add(Dense(hidden_size_0, activation='relu'))
+    model.add(Dense(num_actions))  # output layer
+    model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
         print("model_loaded")
@@ -270,6 +270,10 @@ if __name__ == "__main__":
         #     Train
         game_count = 0
         for e in range(epoch):
+            if e%25 == 0 and e != 0:
+                verbose = True
+            else:
+                verbose = False
             env = GameExtended()
             loss = 0.
             gameover = False
