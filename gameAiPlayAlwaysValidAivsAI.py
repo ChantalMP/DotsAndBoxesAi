@@ -134,22 +134,22 @@ class Ai:
         return inputs, targets
 
 # tensorboard logging method simplified for our project
-def write_log(callback,train_loss,ai_wins,random_moves, batch_no):
-        summary = tf.Summary()
-        #add train_loss
-        summary_value = summary.value.add()
-        summary_value.simple_value = train_loss
-        summary_value.tag = "train_loss"
-        # add ai_wins
-        summary_value = summary.value.add()
-        summary_value.simple_value = ai_wins
-        summary_value.tag = "ai_wins"
-        # add random_moves
-        summary_value = summary.value.add()
-        summary_value.simple_value = random_moves
-        summary_value.tag = "random_moves"
-        callback.writer.add_summary(summary, batch_no)
-        callback.writer.flush()
+def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
+    summary = tf.Summary()
+    # add train_loss
+    summary_value = summary.value.add()
+    summary_value.simple_value = train_loss
+    summary_value.tag = "train_loss"
+    # add ai_wins
+    summary_value = summary.value.add()
+    summary_value.simple_value = ai_wins
+    summary_value.tag = "ai_wins"
+    # add random_moves
+    summary_value = summary.value.add()
+    summary_value.simple_value = ai_fields
+    summary_value.tag = "ai_fields"
+    callback.writer.add_summary(summary, batch_no)
+    callback.writer.flush()
 
 def find_best(q, env):
     action = np.argmax(q)
@@ -263,10 +263,6 @@ if __name__ == "__main__":
 
         #     Train
         game_count = 0
-        ai_wins = 0
-        random_wins = 0
-        ai_fields = 0
-        random_fields = 0
         for e in range(epoch):
             env = GameExtended()
             loss = 0.
@@ -281,13 +277,13 @@ if __name__ == "__main__":
             if verbose:
                 print("starting game")
                 print(field_to_str(env.rows, env.columns))
+            # do we need this, i think it does not work otherwise.
+            # input_old = input
             while not gameover:
                 #AIMOVE
                 input_1, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input, gameover, action, ai_player_1, model, old_score, input_old)
                 if ai_should_play:
                     loss = evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
-                else:
-                    loss = evaluate_ai(loss, ai_player_2, model,  old_score, input_old, action, input, gameover, batch_size)
 
                 input, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input, gameover, action, ai_player_2, model, old_score, input_old)
                 if ai_should_play:
@@ -300,14 +296,48 @@ if __name__ == "__main__":
 
             #logging after each game saving with the epoch number.
             if e % 50 == 0 and e != 0:
-                model.save(model_temp_name,overwrite=True)
-                print("Ai Wins: {}, with {} fields and {} random moves\n Random Wins: {} with {} fields".format(ai_wins, ai_fields, ai_played_random_count, random_wins, random_fields))
-                write_log(callback, train_loss=loss, ai_wins=ai_wins, random_moves=ai_played_random_count, batch_no=e)
+                # play it against random
+                env = GameExtended()
+                input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
+                loss = 0.
+                gameover = False
+                predicted = False
+                verbose = False
+                old_score = False
+                input_old = False
+                action = False
                 ai_wins = 0
+                random_wins = 0
                 ai_fields = 0
                 random_fields = 0
-                random_wins = 0
-                ai_played_random_count = 0
+
+                if verbose:
+                    print("starting game")
+                    print(field_to_str(env.rows, env.columns))
+                while not gameover:
+                    # AIMOVE
+                    input_old = input
+                    input, gameover, ai_should_play, old_score, input_old, action = ai_player_move(input,gameover,action,ai_player_1,model,old_score,input_old)
+                    if ai_should_play:
+                        loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
+                    # RANDOMMOVE
+                    input, gameover =random_player_move(input,gameover,playernr=2)
+                    loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
+
+                # logging after each game saving with the epoch number.
+                current_ai_field = env.player1["Points"]
+                current_random_field = env.player2["Points"]
+                if current_ai_field > current_random_field:
+                    ai_wins = 1
+                elif current_random_field > current_ai_field:
+                    random_wins = 1
+                ai_fields = current_ai_field
+                random_fields = current_random_field
+
+                # final evolution
+                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields, random_wins, random_fields))
+                model.save(model_temp_name,overwrite=True)
+                write_log(callback, train_loss=loss, ai_wins=ai_wins,ai_fields=ai_fields,batch_no=e)
                 print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
         model.save(model_name, overwrite=False)

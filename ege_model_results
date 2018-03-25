@@ -1,0 +1,4 @@
+mm500_hsmin128_hsmax1024_nvr-5_lr0.01_d0.5_hl7.h5
+Ai Wins: 46, with 565 fields and 20 random moves
+ Random Wins: 3 with 112 fields
+Epoch 19250 | Loss 0.6586

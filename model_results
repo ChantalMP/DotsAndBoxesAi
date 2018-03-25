@@ -165,9 +165,16 @@ lr=0.1 else default
 - hidden_size=4096 non_valid -2 discount 0.9
     ----notfinished----
 - hidden_size=4096 non_valid -2 discount 0.5
-     ----notfinished----
+     Ai Wins: 47, with 574 fields and 15 random moves
+    Random Wins: 3 with 125 fields
+    Epoch 6800 | Loss 1.5881
 - hidden_size=4096 non_valid -2 discount 0.1
-    ----notfinished----
+    Ai Wins: 47, with 578 fields and 29 random moves
+ Random Wins: 2 with 114 fields
+Epoch 7000 | Loss 1.0077
+
+
+
 
 
 

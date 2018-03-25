@@ -293,8 +293,8 @@ if __name__ == "__main__":
 
             if e % 50 == 0 and e != 0:
                 model.save(model_temp_name,overwrite=True)
-                print("Ai Wins: {}, with {} fields and {} random moves\n Random Wins: {} with {} fields".format(ai_wins, ai_fields, ai_played_random_count, random_wins, random_fields))
-                write_log(callback, train_loss=loss, ai_wins=ai_wins, random_moves=ai_played_random_count, batch_no=e)
+                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields, random_wins, random_fields))
+                write_log(callback, train_loss=loss, ai_wins=ai_wins, random_moves=0, batch_no=e)
                 ai_wins = 0
                 ai_fields = 0
                 random_fields = 0
