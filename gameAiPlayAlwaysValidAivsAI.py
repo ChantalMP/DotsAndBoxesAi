@@ -12,6 +12,8 @@ from keras.models import load_model
 import os.path
 import tensorflow as tf
 from keras.callbacks import TensorBoard
+from keras import losses
+from keras import optimizers
 
 verbose = True
 
@@ -195,6 +197,8 @@ def ai_player_move(input, gameover, ai:Ai, model , loss):
         # get next action
         if np.random.rand() <= epsilon:
             valid = False
+            if verbose:
+                print("THIS WAS JUST A GUESS")
             while not valid:
                 action = random.randint(0, num_actions - 1)
                 array_i, h, w = env.convert_action_to_move(action)
@@ -250,7 +254,7 @@ if __name__ == "__main__":
     #     keras
     model = Sequential()
 
-    model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
+    model.add(Dense(hidden_size_0, input_shape=(num_actions,), activation='relu'))
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer

@@ -2,3 +2,18 @@ mm500_hsmin128_hsmax1024_nvr-5_lr0.01_d0.5_hl7.h5
 Ai Wins: 46, with 565 fields and 20 random moves
  Random Wins: 3 with 112 fields
 Epoch 19250 | Loss 0.6586
+
+epsilon 2 gegen 1
+
+
+https://keras.io/losses/
+mean_squared_error vs squared_hinge vs categorical_crossentropy
+
+
+
+https://keras.io/optimizers/
+SGD vs Adam vs Adadelta vs Adamax
+
+
+
+https://keras.io/activations/
