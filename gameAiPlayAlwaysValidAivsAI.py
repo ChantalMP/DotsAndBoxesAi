@@ -7,7 +7,7 @@ from keras.optimizers import sgd
 from gameLogic import *
 from gamePlay import Game
 import random
-from gameView import width, height, field_to_str
+from gameView import width, height, field_to_str, num_actions
 from keras.models import load_model
 import os.path
 import tensorflow as tf
@@ -46,7 +46,7 @@ class GameExtended(Game):
 
     def convert_field_to_inputarray(self, field):
         # field = [rows, colomns]
-        input = np.zeros(40)
+        input = np.zeros(num_actions)
         index = 0
         for h in range(height + 1):
             # one for columns, one for rows
@@ -94,7 +94,7 @@ class GameExtended(Game):
     def random_act(self, playernr):
         success = False
         while not success and self.free_edge_count() > 0:
-            action = random.randint(0, 40)
+            action = random.randint(0, num_actions)
             array_i, h, w = self.convert_action_to_move(action)
             success = validate_move([self.rows, self.columns], array_i, h, w)
             if success:
@@ -158,7 +158,7 @@ def find_best(q, env):
     array_i,h,w = env.convert_action_to_move(action)
     tmp = np.copy(q)
     while not validate_move([env.rows, env.columns], array_i,h,w):
-        tmp[action] = -17
+        tmp[action] = -100000
         action = np.argmax(tmp)
         array_i,h,w = env.convert_action_to_move(action)
     return action
@@ -238,16 +238,15 @@ def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameove
 if __name__ == "__main__":
 
     epsilon = .1  # random moves
-    num_actions = 40
     epoch = 200000
     max_memory = 500
-    hidden_size_0 = 128
-    hidden_size_1 = 256
+    hidden_size_0 = 512
+    hidden_size_1 = 1024
     batch_size = 50
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}AIVSAI.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3")
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
     print(model_name)
     model_temp_name = "temp_" + model_name
 
@@ -321,7 +320,6 @@ if __name__ == "__main__":
                 loss = 0.
                 gameover = False
                 predicted = False
-                verbose = False
                 old_score = False
                 input_old = False
                 action = False
@@ -331,7 +329,7 @@ if __name__ == "__main__":
                 random_fields = 0
 
                 if verbose:
-                    print("starting game")
+                    print("starting RANDOM game")
                     print(field_to_str(env.rows, env.columns))
                 while not gameover:
                     # AIMOVE
@@ -341,6 +339,8 @@ if __name__ == "__main__":
                     if not gameover:
                         input, gameover = random_player_move(gameover,2)
                         loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
+                        print("RANDOM PLayed")
+                        print(field_to_str(env.rows, env.columns))
 
                 # logging after each game saving with the epoch number.
                 current_ai_field = env.player1["Points"]

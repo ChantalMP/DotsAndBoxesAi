@@ -10,10 +10,4 @@ https://keras.io/losses/
 mean_squared_error vs squared_hinge vs categorical_crossentropy
 
 
-
-https://keras.io/optimizers/
-SGD vs Adam vs Adadelta vs Adamax
-
-
-
 https://keras.io/activations/

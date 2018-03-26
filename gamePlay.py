@@ -86,35 +86,35 @@ class Game:
                     c += 1
         return c
 
-    # print(print_Field(sefield_arrays[0], field_arrays[1]))
+# print(print_Field(sefield_arrays[0], field_arrays[1]))
 
-    # obstaclenumber = obstacle_count
-    #
-    # # main loop
-    # # make user and ai move TODO
-    # # make random move TODO
-    # while (not game_over(obstaclenumber, player1["Points"], player2["Points"])):
-    #     active_player = calculate_active_player(whose_turn)
-    #     move = input("{} make your move!".format(active_player["Name"]))
-    #     move = convert_user_move_to_array(move)
-    #     # then move invalid
-    #     if move == False:
-    #         print("move false")
-    #         continue
-    #
-    #     if make_move(move[0], move[1], move[2]) == True:
-    #         print("success")
-    #         new_fields = newFullField(field_arrays, move[0], move[1], move[2])
-    #         active_player["Points"] += new_fields
-    #         if new_fields == 0:
-    #             whose_turn = 1 - whose_turn
-    #
-    #     else:
-    #         print("failed")
-    #
-    #     print(print_Field(field_arrays[0], field_arrays[1]))
-    #     print(player1)
-    #     print(player2)
+# obstaclenumber = obstacle_count
+#
+# # main loop
+# # make user and ai move TODO
+# # make random move TODO
+# while (not game_over(obstaclenumber, player1["Points"], player2["Points"])):
+#     active_player = calculate_active_player(whose_turn)
+#     move = input("{} make your move!".format(active_player["Name"]))
+#     move = convert_user_move_to_array(move)
+#     # then move invalid
+#     if move == False:
+#         print("move false")
+#         continue
+#
+#     if make_move(move[0], move[1], move[2]) == True:
+#         print("success")
+#         new_fields = newFullField(field_arrays, move[0], move[1], move[2])
+#         active_player["Points"] += new_fields
+#         if new_fields == 0:
+#             whose_turn = 1 - whose_turn
+#
+#     else:
+#         print("failed")
+#
+#     print(print_Field(field_arrays[0], field_arrays[1]))
+#     print(player1)
+#     print(player2)
 
 # game = Game()
 # while True and game.free_edge_count() > 0:

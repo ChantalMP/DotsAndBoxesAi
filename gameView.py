@@ -1,10 +1,12 @@
 import random
 import numpy as np
 
-width = 4
-height = 4
+square_size = 8
+width = square_size
+height = square_size
+num_actions = square_size*(square_size+1)*2
 max_obstacles = 2
-max_obstacle_width = 2
+max_obstacle_width = 3
 
 class MyException(Exception):
     pass

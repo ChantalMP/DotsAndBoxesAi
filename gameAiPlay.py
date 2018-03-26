@@ -7,7 +7,7 @@ from keras.optimizers import sgd
 from gameLogic import *
 from gamePlay import Game
 import random
-from gameView import width, height, field_to_str
+from gameView import width, height, field_to_str, num_actions
 from keras.models import load_model
 import os.path
 import tensorflow as tf
@@ -46,7 +46,7 @@ class GameExtended(Game):
 
     def convert_field_to_inputarray(self, field):
         # field = [rows, colomns]
-        input = np.zeros(40)
+        input = np.zeros(num_actions)
         index = 0
         for h in range(height + 1):
             # one for columns, one for rows
@@ -98,7 +98,7 @@ class GameExtended(Game):
     def random_act(self, playernr):
         success = False
         while not success and self.free_edge_count() > 0:
-            action = random.randint(0, 40)
+            action = random.randint(0, num_actions)
             array_i, h, w = self.convert_action_to_move(action)
             success = validate_move([self.rows, self.columns], array_i, h, w)
             if success:
@@ -160,7 +160,6 @@ def write_log(callback,train_loss,ai_wins,random_moves, batch_no):
 if __name__ == "__main__":
 
     epsilon = .1  # random moves
-    num_actions = 40
     epoch = 200000
     max_memory = 500
     hidden_size_0 = 128
@@ -169,14 +168,14 @@ if __name__ == "__main__":
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_nvr{}_lr{}_d{}_hl{}.h5".format(max_memory, hidden_size_0, hidden_size_1,non_valid_move_reward,learning_rate,discount, "3")
+    model_name = "mm{}_hsmin{}_hsmax{}_nvr{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,non_valid_move_reward,learning_rate,discount, "3", num_actions)
     print(model_name)
     model_temp_name = "temp_" + model_name
 
     #     keras
     model = Sequential()
 
-    model.add(Dense(hidden_size_0, input_shape=(40,), activation='relu'))
+    model.add(Dense(hidden_size_0, input_shape=(num_actions,), activation='relu'))
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
