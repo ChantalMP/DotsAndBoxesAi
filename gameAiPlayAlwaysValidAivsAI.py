@@ -246,7 +246,7 @@ if __name__ == "__main__":
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}adam.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
     print(model_name)
     model_temp_name = "temp_" + model_name
 
@@ -257,7 +257,7 @@ if __name__ == "__main__":
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
+    model.compile(optimizer=optimizers.adam(lr=learning_rate), loss='mse')
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
         print("model_loaded")
@@ -339,8 +339,6 @@ if __name__ == "__main__":
                     if not gameover:
                         input, gameover = random_player_move(gameover,2)
                         loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
-                        print("RANDOM PLayed")
-                        print(field_to_str(env.rows, env.columns))
 
                 # logging after each game saving with the epoch number.
                 current_ai_field = env.player1["Points"]
