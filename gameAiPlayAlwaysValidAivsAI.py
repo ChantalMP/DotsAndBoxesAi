@@ -243,9 +243,10 @@ if __name__ == "__main__":
     hidden_size_0 = 512
     hidden_size_1 = 1024
     batch_size = 50
-    learning_rate = 0.05
+    learning_rate = 0.01
+    # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_epsi{}_mse.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions,epsilon)
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
     print(model_name)
     model_temp_name = "temp_" + model_name
     model_epochs_trained = 0
