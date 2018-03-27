@@ -243,12 +243,12 @@ if __name__ == "__main__":
     hidden_size_0 = 512
     hidden_size_1 = 1024
     batch_size = 50
-    learning_rate = 0.01
-    # TODO , learning_rate 0.01 test
+    learning_rate = 0.05
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_epsi{}_mse.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions,epsilon)
     print(model_name)
     model_temp_name = "temp_" + model_name
+    model_epochs_trained = 0
 
     #     keras
     model = Sequential()
@@ -257,9 +257,27 @@ if __name__ == "__main__":
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=sgd(lr=learning_rate), loss='mse')
+    model.compile(optimizer=sgd(lr=learning_rate), loss=losses.mse)
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
+        training_file = open('model_trained_till_epoch.txt','r')
+        model_save_found = False
+        for line in training_file:
+            try:
+                key, value = line.split(" ")
+            except ValueError:
+                continue
+            if key == model_temp_name:
+                model_epochs_trained = value
+                model_save_found = True
+        training_file.close()
+        if model_save_found == False:
+            print("epoch save not found defaulting to 0")
+            training_file = open('model_trained_till_epoch.txt','a')
+            training_file.write("\n" + model_temp_name + " " + str(0))
+            training_file.close()
+
+
         print("model_loaded")
 
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- Works on mac logs are saved on the project directory
@@ -276,8 +294,8 @@ if __name__ == "__main__":
 
         #     Train
         game_count = 0
-        for e in range(epoch):
-            if e%25 == 0 and e != 0:
+        for e in range(int(model_epochs_trained),epoch):
+            if e%25 == 0 and e != model_epochs_trained:
                 verbose = True
             else:
                 verbose = False
@@ -313,7 +331,7 @@ if __name__ == "__main__":
                     loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover, batch_size)
 
             #logging after each game saving with the epoch number.
-            if e % 50 == 0 and e != 0:
+            if e % 50 == 0 and e != model_epochs_trained:
                 # play it against random
                 env = GameExtended()
                 input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
@@ -355,6 +373,23 @@ if __name__ == "__main__":
                 # final evolution
                 print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields, random_wins, random_fields))
                 model.save(model_temp_name,overwrite=True)
+                training_file = open('model_trained_till_epoch.txt', 'r')
+                out = ""
+                for line in training_file:
+                    try:
+                        key, value = line.split(" ")
+                    except ValueError:
+                        continue
+                    if key == model_temp_name:
+                        out += model_temp_name + " " + str(e)
+                    else:
+                        out += line
+                    out += "\n"
+                training_file.close()
+                new_file = open('model_trained_till_epoch.txt', 'w')
+                new_file.write(out)
+                new_file.close()
+
                 write_log(callback, train_loss=loss, ai_wins=ai_wins,ai_fields=ai_fields,batch_no=e)
                 print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 

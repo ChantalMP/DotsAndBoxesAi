@@ -8,6 +8,27 @@ epsilon 2 gegen 1
 
 https://keras.io/losses/
 mean_squared_error vs squared_hinge vs categorical_crossentropy
+8 by 8
 
+epsilon 1 mse
+    -
+epsilon 2 mse
+    -
+epsilon 1 sh
+    -1000 epochs fields = 30 wins 0.5
+
+epsilon 2 sh
+    -
+epsilon 1 cc
+    -did not run
+epsilon 2 cc
+    -did not run
+
+
+
+1.mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144_epsi0.1_mse.h5
+2.mm500_hsmin512_hsmax1024_lr0.05_d0.5_hl3_na144_epsi0.1_mse.h5
+3.mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144_epsi0.1_sh.h5
+4.mm500_hsmin512_hsmax1024_lr0.05_d0.5_hl3_na144_epsi0.2_mse.h5
 
 https://keras.io/activations/

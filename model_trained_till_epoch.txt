@@ -1,0 +1,7 @@
+temp_mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144_epsi0.1_mse.h5 3050
+
+temp_mm500_hsmin512_hsmax1024_lr0.05_d0.5_hl3_na144_epsi0.1_mse.h5 50
+temp_mm500_hsmin512_hsmax1024_lr0.05_d0.5_hl3_na144_epsi0.2_mse.h5 0
+
+temp_mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144_epsi0.1_sh.h5 3000
+
