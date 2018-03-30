@@ -146,7 +146,7 @@ def game_loop():
                         field[array_i][h][w] = 1
                         pygame.draw.rect(gameDisplay, red, line)
                         pygame.display.update()
-                        pygame.time.wait(50)
+                        pygame.time.wait(500)
                         pygame.draw.rect(gameDisplay, dark_green, line)
                         draw_full_fields(idx)
 

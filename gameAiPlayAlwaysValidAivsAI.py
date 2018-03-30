@@ -81,7 +81,9 @@ class GameExtended(Game):
         self.calculate_active_player(playernr)["Points"] += new_fields
 
     def _get_reward(self, playernr, old_score):
-        return (self.get_player_score(playernr) - old_score)
+        reward = self.get_player_score(playernr) - old_score
+        print("Reward is {} for player nr {}".format(reward , playernr))
+        return reward
 
 
     def act(self, action, playernr):
@@ -117,20 +119,20 @@ class Ai:
 
     def get_batch(self, model, batch_size=10):
         len_memory = len(self.memory)
-        num_actions = model.output_shape[-1]
-        env_dim = self.memory[0][0][0].shape[1]
+        env_dim = num_actions
         inputs = np.zeros((min(len_memory, batch_size), env_dim))
-        targets = np.zeros((inputs.shape[0], num_actions))
+        targets = np.zeros((min(len_memory, batch_size), num_actions))
 
-        for i, idx in enumerate(np.random.randint(0, len_memory, size=inputs.shape[0])):
+        arr = np.random.randint(0, len_memory, size=(min(len_memory, batch_size)))
+        for i, idx in enumerate(arr):
             state_t, action_t, reward_t, state_next = self.memory[idx][0]
             gameover = self.memory[idx][1]
             inputs[i:i + 1] = state_t
             targets[i] = model.predict(state_t)[0]
-            Q_sa = np.max(model.predict(state_next)[0])
             if gameover:
                 targets[i, action_t] = reward_t
             else:
+                Q_sa = find_best_for_state(model.predict(state_next)[0], state_next)
                 targets[i, action_t] = reward_t + self.discount * Q_sa
 
         return inputs, targets
@@ -152,6 +154,14 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     summary_value.tag = "ai_fields"
     callback.writer.add_summary(summary, batch_no)
     callback.writer.flush()
+
+def find_best_for_state(q, state):
+    action = np.argmax(q)
+    tmp = np.copy(q)
+    while state[0][action] != 0:
+        tmp[action] = -100000
+        action = np.argmax(tmp)
+    return action
 
 def find_best(q, env):
     action = np.argmax(q)
@@ -217,8 +227,7 @@ def ai_player_move(input, gameover, ai:Ai, model , loss):
             print("AI {} PLAYED".format(ai.playernr))
             print(field_to_str(env.rows, env.columns))
         if ai_should_play:
-            loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover,
-                               batch_size)
+            loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover,batch_size)
 
     return input, gameover, old_score, input_old, action,loss
 
@@ -299,7 +308,7 @@ if __name__ == "__main__":
             if e%25 == 0 and e != model_epochs_trained:
                 verbose = True
             else:
-                verbose = False
+                verbose = True
             env = GameExtended()
             loss = 0.
             gameover = False
