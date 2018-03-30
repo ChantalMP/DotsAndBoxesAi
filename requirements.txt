@@ -3,5 +3,4 @@ keras
 matplotlib
 numpy
 h5py
-pyqt5
 pygame
