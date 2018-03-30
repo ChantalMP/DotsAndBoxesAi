@@ -395,3 +395,6 @@ if __name__ == "__main__":
                 print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
         model.save(model_name, overwrite=False)
+
+    else:
+        pass
