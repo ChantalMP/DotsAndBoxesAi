@@ -15,11 +15,7 @@ from keras.callbacks import TensorBoard
 from keras import losses
 from keras import optimizers
 
-train_mode_immediate = False
-epsilon = 1.  # random moves
-epsilon_min = 0.01
-epsilon_decay = 0.995
-
+verbose = True
 
 class GameExtended(Game):
     def __init__(self):
@@ -237,22 +233,12 @@ def ai_player_move(input, gameover, ai:Ai, model , loss):
 
 
 def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameover, batch_size):
-    global epsilon, epsilon_min, epsilon_decay
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
     # adapt model
-    if train_mode_immediate:
-        inputs, targets = ai.get_batch(model, batch_size=batch_size)
-        loss += model.train_on_batch(inputs, targets)
-    else:
-        if gameover:
-            inputs, targets = ai.get_batch(model, batch_size=batch_size)
-            loss += model.train_on_batch(inputs, targets)
-
-    if gameover:
-        if epsilon > epsilon_min:
-            epsilon *= epsilon_decay
+    inputs, targets = ai.get_batch(model, batch_size=batch_size)
+    loss += model.train_on_batch(inputs, targets)
 
     return loss
 
@@ -260,15 +246,16 @@ def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameove
 
 if __name__ == "__main__":
 
+    epsilon = .1  # random moves
     epoch = 200000
-    max_memory = 1 if train_mode_immediate else 500
+    max_memory = 500
     hidden_size_0 = 512
     hidden_size_1 = 1024
-    batch_size = 1 if train_mode_immediate else 50
+    batch_size = 50
     learning_rate = 0.01
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions, train_mode_immediate)
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
     print(model_name)
     model_temp_name = "temp_" + model_name
     model_epochs_trained = 0
@@ -321,7 +308,7 @@ if __name__ == "__main__":
             if e%25 == 0 and e != model_epochs_trained:
                 verbose = True
             else:
-                verbose = False
+                verbose = True
             env = GameExtended()
             loss = 0.
             gameover = False
@@ -352,8 +339,6 @@ if __name__ == "__main__":
                     input_1, gameover, old_score_2, input_old_2, action_2 , loss = ai_player_move(input_2, gameover, ai_player_2, model,loss)
                     ai_2_played = True
                     loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover, batch_size)
-
-
 
             #logging after each game saving with the epoch number.
             if e % 50 == 0 and e != model_epochs_trained:
