@@ -15,7 +15,6 @@ from keras.callbacks import TensorBoard
 from keras import losses
 from keras import optimizers
 
-epsilon = 0.1
 train_mode_immediate = False
 epsilon = 1.  # random moves
 epsilon_min = 0.01
@@ -69,7 +68,7 @@ class GameExtended(Game):
 
         return input
 
-    def convert_and_reshape_field_to_inputarray(self,field):
+    def convert_and_reshape_field_to_inputarray(self, field):
         input_array = self.convert_field_to_inputarray(field)
         r_input_array = input_array.reshape((1, -1))
         return r_input_array
@@ -91,9 +90,9 @@ class GameExtended(Game):
     def act(self, action, playernr):
         old_score = self.get_player_score(playernr)
         self._update_state(action, playernr)
-        #reward = self._get_reward(playernr, old_score)
+        # reward = self._get_reward(playernr, old_score)
         gameover = game_over(self)
-        return self.convert_and_reshape_field_to_inputarray([self.rows,self.columns]), old_score, gameover
+        return self.convert_and_reshape_field_to_inputarray([self.rows, self.columns]), old_score, gameover
 
     def random_act(self, playernr):
         success = False
@@ -104,7 +103,7 @@ class GameExtended(Game):
             if success:
                 self._update_state(action, playernr)
                 gameover = game_over(self)
-                return self.convert_and_reshape_field_to_inputarray([self.rows,self.columns]), gameover
+                return self.convert_and_reshape_field_to_inputarray([self.rows, self.columns]), gameover
 
 
 class Ai:
@@ -139,6 +138,7 @@ class Ai:
 
         return inputs, targets
 
+
 # tensorboard logging method simplified for our project
 def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     summary = tf.Summary()
@@ -157,6 +157,7 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     callback.writer.add_summary(summary, batch_no)
     callback.writer.flush()
 
+
 def find_best_for_state(q, state):
     index = np.argmax(q)
     prediction = np.max(q)
@@ -167,15 +168,17 @@ def find_best_for_state(q, state):
         prediction = np.max(tmp)
     return prediction
 
+
 def find_best(q, env):
     action = np.argmax(q)
-    array_i,h,w = env.convert_action_to_move(action)
+    array_i, h, w = env.convert_action_to_move(action)
     tmp = np.copy(q)
-    while not validate_move([env.rows, env.columns], array_i,h,w):
+    while not validate_move([env.rows, env.columns], array_i, h, w):
         tmp[action] = -100000
         action = np.argmax(tmp)
-        array_i,h,w = env.convert_action_to_move(action)
+        array_i, h, w = env.convert_action_to_move(action)
     return action
+
 
 def random_player_move(gameover, playernr):
     input = False
@@ -195,7 +198,8 @@ def random_player_move(gameover, playernr):
 
     return input, gameover
 
-def ai_player_move(input, gameover, ai:Ai, model , loss):
+
+def ai_player_move(input, gameover, ai: Ai, model, loss):
     action = False
     old_score = False
     input_old = False
@@ -231,12 +235,12 @@ def ai_player_move(input, gameover, ai:Ai, model , loss):
             print("AI {} PLAYED".format(ai.playernr))
             print(field_to_str(env.rows, env.columns))
         if ai_should_play:
-            loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover,batch_size)
+            loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover, batch_size)
 
-    return input, gameover, old_score, input_old, action,loss
+    return input, gameover, old_score, input_old, action, loss
 
 
-def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameover, batch_size):
+def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameover, batch_size):
     global epsilon, epsilon_min, epsilon_decay
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     # store experience
@@ -253,21 +257,23 @@ def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameove
     if gameover:
         if epsilon > epsilon_min:
             epsilon *= epsilon_decay
-    return loss
 
+    return loss
 
 
 if __name__ == "__main__":
 
     epoch = 200000
-    max_memory = 1
-    hidden_size_0 = num_actions*2
-    hidden_size_1 = num_actions*4
-    batch_size = 1
+    max_memory = 1 if train_mode_immediate else 500
+    hidden_size_0 = num_actions * 2
+    hidden_size_1 = num_actions * 4
+    batch_size = 1 if train_mode_immediate else 50
     learning_rate = 0.05
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}test.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,
+                                                                          learning_rate, discount, "3", num_actions,
+                                                                          train_mode_immediate)
     print(model_name)
     model_temp_name = "temp_" + model_name
     model_epochs_trained = 0
@@ -282,7 +288,7 @@ if __name__ == "__main__":
     model.compile(optimizer=optimizers.sgd(lr=learning_rate), loss=losses.mse)
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
-        training_file = open('model_trained_till_epoch.txt','r')
+        training_file = open('model_trained_till_epoch.txt', 'r')
         model_save_found = False
         for line in training_file:
             try:
@@ -295,10 +301,9 @@ if __name__ == "__main__":
         training_file.close()
         if model_save_found == False:
             print("epoch save not found defaulting to 0")
-            training_file = open('model_trained_till_epoch.txt','a')
+            training_file = open('model_trained_till_epoch.txt', 'a')
             training_file.write("\n" + model_temp_name + " " + str(0))
             training_file.close()
-
 
         print("model_loaded")
 
@@ -317,8 +322,8 @@ if __name__ == "__main__":
         #     Train
         game_count = 0
         loss = 0.
-        for e in range(int(model_epochs_trained),epoch):
-            if e%100 == 0 and e != model_epochs_trained:
+        for e in range(int(model_epochs_trained), epoch):
+            if e % 100 == 0 and e != model_epochs_trained:
                 verbose = True
             else:
                 verbose = False
@@ -341,24 +346,28 @@ if __name__ == "__main__":
 
             ai_2_played = False
 
-            #input_2 = output_1 and other way round
+            # input_2 = output_1 and other way round
             while not gameover:
-                #AIMOVE
-                input_2, gameover, old_score_1, input_old_1, action_1,loss = ai_player_move(input_1, gameover, ai_player_1, model,loss)
+                # AIMOVE
+                input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input_1, gameover,
+                                                                                             ai_player_1, model, loss)
                 if ai_2_played:
-                    loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_2, gameover,batch_size)
+                    loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_2, gameover,
+                                       batch_size)
 
                 if not gameover:
-                    input_1, gameover, old_score_2, input_old_2, action_2 , loss = ai_player_move(input_2, gameover, ai_player_2, model,loss)
+                    input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input_2, gameover,
+                                                                                                 ai_player_2, model,
+                                                                                                 loss)
                     ai_2_played = True
-                    loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover, batch_size)
+                    loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover,
+                                       batch_size)
 
-            #logging after each game saving with the epoch number.
+            # logging after each game saving with the epoch number.
             if e % 50 == 0 and e != model_epochs_trained:
                 # play it against random
                 env = GameExtended()
                 input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
-                #loss = 0. if train_mode_immediate else loss
                 gameover = False
                 predicted = False
                 old_score = False
@@ -375,11 +384,12 @@ if __name__ == "__main__":
                 while not gameover:
                     # AIMOVE
                     input_old = input
-                    input, gameover, old_score, input_old, action,loss = ai_player_move(input_1,gameover,ai_player_1,model,loss)
+                    input, gameover, old_score, input_old, action, loss = ai_player_move(input_1, gameover, ai_player_1,
+                                                                                         model, loss)
                     # RANDOMMOVE
                     if not gameover:
-                        input, gameover = random_player_move(gameover,2)
-                        evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
+                        input, gameover = random_player_move(gameover, 2)
+                        evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
 
                 # logging after each game saving with the epoch number.
                 current_ai_field = env.player1["Points"]
@@ -392,8 +402,10 @@ if __name__ == "__main__":
                 random_fields = current_random_field
 
                 # final evolution
-                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields, random_wins, random_fields))
-                model.save(model_temp_name,overwrite=True)
+                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
+                                                                                             random_wins,
+                                                                                             random_fields))
+                model.save(model_temp_name, overwrite=True)
                 training_file = open('model_trained_till_epoch.txt', 'r')
                 out = ""
                 for line in training_file:
@@ -411,7 +423,7 @@ if __name__ == "__main__":
                 new_file.write(out)
                 new_file.close()
 
-                write_log(callback, train_loss=loss, ai_wins=ai_wins,ai_fields=ai_fields,batch_no=e)
+                write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
                 print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
         model.save(model_name, overwrite=False)
