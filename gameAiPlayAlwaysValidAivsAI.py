@@ -134,7 +134,7 @@ class Ai:
             if gameover:
                 targets[i, action_t] = reward_t
             else:
-                Q_sa = np.max(model.predict(state_next)[0])
+                Q_sa = find_best_for_state(model.predict(state_next)[0], state_next)
                 targets[i, action_t] = reward_t + self.discount * Q_sa
 
         return inputs, targets
@@ -158,12 +158,14 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     callback.writer.flush()
 
 def find_best_for_state(q, state):
-    action = np.argmax(q)
+    index = np.argmax(q)
+    prediction = np.max(q)
     tmp = np.copy(q)
-    while state[0][action] != 0:
-        tmp[action] = -100000
-        action = np.argmax(tmp)
-    return action
+    while state[0][index] != 0:
+        tmp[index] = -100000
+        index = np.argmax(tmp)
+        prediction = np.max(tmp)
+    return prediction
 
 def find_best(q, env):
     action = np.argmax(q)
@@ -246,12 +248,11 @@ def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameove
     else:
         if gameover:
             inputs, targets = ai.get_batch(model, batch_size=batch_size)
-            loss += model.train_on_batch(inputs, targets)
+            loss = model.train_on_batch(inputs, targets)
 
     if gameover:
         if epsilon > epsilon_min:
             epsilon *= epsilon_decay
-
     return loss
 
 
@@ -266,7 +267,7 @@ if __name__ == "__main__":
     learning_rate = 0.05
     # TODO , learning_rate 0.01 test
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}test.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
     print(model_name)
     model_temp_name = "temp_" + model_name
     model_epochs_trained = 0
@@ -315,13 +316,14 @@ if __name__ == "__main__":
 
         #     Train
         game_count = 0
+        loss = 0.
         for e in range(int(model_epochs_trained),epoch):
             if e%100 == 0 and e != model_epochs_trained:
                 verbose = True
             else:
                 verbose = False
             env = GameExtended()
-            loss = 0.
+            loss = 0. if train_mode_immediate else loss
             gameover = False
             predicted = False
             old_score_1 = False
@@ -356,7 +358,7 @@ if __name__ == "__main__":
                 # play it against random
                 env = GameExtended()
                 input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
-                loss = 0.
+                #loss = 0. if train_mode_immediate else loss
                 gameover = False
                 predicted = False
                 old_score = False
@@ -377,7 +379,7 @@ if __name__ == "__main__":
                     # RANDOMMOVE
                     if not gameover:
                         input, gameover = random_player_move(gameover,2)
-                        loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
+                        evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
 
                 # logging after each game saving with the epoch number.
                 current_ai_field = env.player1["Points"]
