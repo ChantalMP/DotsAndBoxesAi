@@ -288,24 +288,26 @@ if __name__ == "__main__":
     model.compile(optimizer=optimizers.sgd(lr=learning_rate), loss=losses.mse)
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
-        training_file = open('model_trained_till_epoch.txt', 'r')
-        model_save_found = False
-        for line in training_file:
-            try:
-                key, value = line.split(" ")
-            except ValueError:
-                continue
-            if key == model_temp_name:
-                model_epochs_trained = value
-                model_save_found = True
-        training_file.close()
-        if model_save_found == False:
-            print("epoch save not found defaulting to 0")
-            training_file = open('model_trained_till_epoch.txt', 'a')
-            training_file.write("\n" + model_temp_name + " " + str(0))
-            training_file.close()
-
         print("model_loaded")
+
+    training_file = open('model_trained_till_epoch.txt', 'r')
+    model_save_found = False
+    for line in training_file:
+        try:
+            key, value = line.split(" ")
+        except ValueError:
+            continue
+        if key == model_temp_name:
+            model_epochs_trained = value
+            model_save_found = True
+    training_file.close()
+    if model_save_found == False:
+        print("epoch save not found defaulting to 0")
+        training_file = open('model_trained_till_epoch.txt', 'a')
+        training_file.write("\n" + model_temp_name + " " + str(0))
+        training_file.close()
+
+
 
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- Works on mac logs are saved on the project directory
     log_path = './logs/' + model_name
