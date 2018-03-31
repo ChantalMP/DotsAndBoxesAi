@@ -77,7 +77,7 @@ class GameExtended(Game):
         if not self.success:
             self.random_plays += 1
             array_i, height, width = self.random_move()
-        new_fields = newFullField([self.rows, self.columns], array_i, height, width)
+        new_fields = new_full_fields([self.rows, self.columns], array_i, height, width)
         self.calculate_active_player(playernr)["Points"] += new_fields
 
     def _get_reward(self, playernr, old_score):

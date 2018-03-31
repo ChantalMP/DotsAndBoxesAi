@@ -1,9 +1,11 @@
 import pygame
 import time
-import sched
 from gameView import width, height, test_field_full
-from gamePlay import init_Field
-import timeit
+from gameLogic import new_full_fields, game_over
+import os, keras
+from keras.models import load_model
+from gameAiPlayAlwaysValidAivsAI import find_best, GameExtended
+
 
 pygame.init()
 display_width = width*100
@@ -19,6 +21,10 @@ dark_green = (0,155,0)
 blue = (0, 0, 255)
 dark_blue = (0, 0, 155)
 
+model_name = "temp_mm500_hsmin288_hsmax576_lr0.05_d0.5_hl3_na144_tiFalse.h5"
+model = load_model(model_name)
+
+global lines
 # img =  pygame.image.load('racecar.png)
 # drawing: gameDisplay.blit(img, (x,y))
 
@@ -28,8 +34,6 @@ clock = pygame.time.Clock()
 
 gameDisplay.fill(white)
 
-rows,  columns = init_Field()
-field = [rows, columns]
 line_length = 80
 line_thickness = 10
 vertical_space = 100
@@ -73,10 +77,24 @@ def newFullField(field, which, h, w, color = dark_blue):
             if field[0][h][w] == 1 and field[1][h][w+1]==1 and field[0][h+1][w] == 1:
                 draw_full_field(h, w, color)
 
-def draw_full_fields(action_num):
+def draw_full_fields(action_num, field, color):
     array_i, h, w = convert_action_to_move(action_num)
-    newFullField([rows, columns], array_i, h, w)
+    newFullField(field, array_i, h, w, color)
 
+def draw_move(action, field, color):
+    global lines
+    new_line = lines[action]
+    array_i_, h_, w_ = convert_action_to_move(action)
+    field[array_i_][h_][w_] = 1
+    pygame.draw.rect(gameDisplay, red, new_line)
+    pygame.display.update()
+    pygame.time.wait(500)
+    pygame.draw.rect(gameDisplay, color, new_line)
+    field_color = green if color == dark_green else blue
+    draw_full_fields(action, field, field_color)
+    pygame.display.update()
+
+    return field
 
 
 def define_lines(rows, columns):
@@ -106,9 +124,6 @@ def define_lines(rows, columns):
                         pygame.draw.rect(gameDisplay, grey, l)
     return my_line_array
 
-lines = define_lines(rows, columns)
-
-
 def text_objects(text, font):
     textSurface = font.render(text, True, black)
     return textSurface, textSurface.get_rect()
@@ -122,45 +137,74 @@ def message_display(text):
     pygame.display.update()
     time.sleep(3)
 
-    game_loop()
+    game_loop_ai_vs_user()
 
 
-def game_over():
+def game_over_show():
     message_display('You loose!')
 
+def ai_move(field, env, ai_number):
+    ais_turn = True
+    while ais_turn:
+        ais_turn = False
+        input = env.convert_and_reshape_field_to_inputarray(field)
+        action = find_best(model.predict(input)[0], env)
+        array_i, h, w = convert_action_to_move(action)
+        field = draw_move(action, field, dark_green)
+        new_fields = new_full_fields(field, array_i, h, w)
+        env.calculate_active_player(ai_number)["Points"] += new_fields
+        if game_over(env):
+            return field, True
+        if new_fields != 0:
+            ais_turn = True
+            pygame.time.wait(500)
 
-def game_loop():
+    return field, False
+
+
+
+
+def game_loop_ai_vs_user():
     gameexit = False
     gameover = False
+    env = GameExtended()
+    rows, columns = env.rows, env.columns
+    global lines
+    lines = define_lines(rows, columns)
+    field = [rows, columns]
+    user_turn = True
+    user_number = 0
+    ai_number = 1
+
     while not gameexit:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
 
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == pygame.MOUSEBUTTONUP and user_turn and not gameover:
                 pos = pygame.mouse.get_pos()
                 for idx, line in enumerate(lines):
                     array_i, h, w = convert_action_to_move(idx)
                     if line.collidepoint(pos) and field[array_i][h][w] != 1:
-                        field[array_i][h][w] = 1
-                        pygame.draw.rect(gameDisplay, red, line)
-                        pygame.display.update()
-                        pygame.time.wait(500)
-                        pygame.draw.rect(gameDisplay, dark_green, line)
-                        draw_full_fields(idx)
-
-
-                #gameover = True
+                        #user move
+                        draw_move(idx, field, dark_blue)
+                        array_i, h, w = convert_action_to_move(idx)
+                        new_fields = new_full_fields(field, array_i, h, w)
+                        env.calculate_active_player(user_number)["Points"] += new_fields
+                        if game_over(env):
+                            gameover = True
+                            break
+                        if new_fields == 0:
+                            user_turn = False
+                            field, gameover = ai_move(field, env, ai_number)
+                            user_turn = True
+                        break
 
         if gameover:
             print("over")
-            #game_over()
-
-            # print(event)
 
         pygame.display.update()
         clock.tick(60)  # frames per second
 
-
-game_loop()
+game_loop_ai_vs_user()
