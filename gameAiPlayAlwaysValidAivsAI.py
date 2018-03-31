@@ -15,7 +15,7 @@ from keras.callbacks import TensorBoard
 from keras import losses
 from keras import optimizers
 
-verbose = True
+epsilon = 0.1
 
 class GameExtended(Game):
     def __init__(self):
@@ -83,7 +83,6 @@ class GameExtended(Game):
     def _get_reward(self, playernr, old_score):
         return (self.get_player_score(playernr) - old_score)
 
-
     def act(self, action, playernr):
         old_score = self.get_player_score(playernr)
         self._update_state(action, playernr)
@@ -117,20 +116,24 @@ class Ai:
 
     def get_batch(self, model, batch_size=10):
         len_memory = len(self.memory)
-        num_actions = model.output_shape[-1]
-        env_dim = self.memory[0][0][0].shape[1]
+        #num_actions = model.output_shape[-1]
+        env_dim = num_actions
+        #env_dim = self.memory[0][0][0].shape[1]
         inputs = np.zeros((min(len_memory, batch_size), env_dim))
-        targets = np.zeros((inputs.shape[0], num_actions))
+        #targets = np.zeros((inputs.shape[0], num_actions))
+        targets = np.zeros((min(len_memory, batch_size), num_actions))
 
-        for i, idx in enumerate(np.random.randint(0, len_memory, size=inputs.shape[0])):
+        #for i, idx in enumerate(np.random.randint(0, len_memory, size=inputs.shape[0])):
+        arr = np.random.randint(0, len_memory, size=(min(len_memory, batch_size)))
+        for i, idx in enumerate(arr):
             state_t, action_t, reward_t, state_next = self.memory[idx][0]
             gameover = self.memory[idx][1]
             inputs[i:i + 1] = state_t
             targets[i] = model.predict(state_t)[0]
-            Q_sa = np.max(model.predict(state_next)[0])
             if gameover:
                 targets[i, action_t] = reward_t
             else:
+                Q_sa = np.max(model.predict(state_next)[0])
                 targets[i, action_t] = reward_t + self.discount * Q_sa
 
         return inputs, targets
@@ -224,6 +227,7 @@ def ai_player_move(input, gameover, ai:Ai, model , loss):
 
 
 def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameover, batch_size):
+    global epsilon
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
@@ -231,22 +235,24 @@ def evaluate_ai(loss, ai:Ai, model, old_score, input_old, action, input, gameove
     inputs, targets = ai.get_batch(model, batch_size=batch_size)
     loss += model.train_on_batch(inputs, targets)
 
+    print(loss)
     return loss
 
 
 
 if __name__ == "__main__":
 
-    epsilon = .1  # random moves
+    #epsilon = .1  # random moves
     epoch = 200000
-    max_memory = 500
-    hidden_size_0 = 512
-    hidden_size_1 = 1024
-    batch_size = 50
-    learning_rate = 0.01
+    max_memory = 1
+    hidden_size_0 = num_actions*2
+    hidden_size_1 = num_actions*4
+    batch_size = 1
+    learning_rate = 0.05
     # TODO , learning_rate 0.01 test
     discount = 0.5
     model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}.h5".format(max_memory, hidden_size_0, hidden_size_1,learning_rate,discount, "3", num_actions)
+    model_name = "mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144_test.h5"
     print(model_name)
     model_temp_name = "temp_" + model_name
     model_epochs_trained = 0
@@ -258,7 +264,7 @@ if __name__ == "__main__":
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=sgd(lr=learning_rate), loss=losses.mse)
+    model.compile(optimizer=optimizers.sgd(lr=learning_rate), loss=losses.mse)
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
         training_file = open('model_trained_till_epoch.txt','r')
@@ -358,8 +364,6 @@ if __name__ == "__main__":
                     if not gameover:
                         input, gameover = random_player_move(gameover,2)
                         loss = evaluate_ai(loss,ai_player_1,model,old_score,input_old,action,input,gameover,batch_size)
-                        print("RANDOM PLayed")
-                        print(field_to_str(env.rows, env.columns))
 
                 # logging after each game saving with the epoch number.
                 current_ai_field = env.player1["Points"]

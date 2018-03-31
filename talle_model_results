@@ -28,9 +28,6 @@ ai fields: 10, ai_wins: 0,8
 
 https://keras.io/optimizers/
 SGD vs Adam vs Adadelta vs Adamax
-SDG: mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144.h5
-
-
 Adam:mm500_hsmin512_hsmax1024_lr0.01_d0.5_hl3_na144_adam.h5
 
 
