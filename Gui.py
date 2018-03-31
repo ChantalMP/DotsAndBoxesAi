@@ -16,9 +16,9 @@ white = (255, 255, 255)
 grey = (235, 235, 235)
 dark_grey = (100,100,100)
 red = (255, 0, 0)
-green = (0, 255, 0)
+green = (0, 235, 20)
 dark_green = (0,155,0)
-blue = (0, 0, 255)
+blue = (0, 20, 235)
 dark_blue = (0, 0, 155)
 
 model_name = "temp_mm500_hsmin288_hsmax576_lr0.05_d0.5_hl3_na144_tiFalse.h5"
@@ -31,8 +31,6 @@ global lines
 gameDisplay = pygame.display.set_mode((display_width, display_height))  # width and height
 pygame.display.set_caption("Dots and Boxes AI")
 clock = pygame.time.Clock()
-
-gameDisplay.fill(white)
 
 line_length = 80
 line_thickness = 10
@@ -130,18 +128,23 @@ def text_objects(text, font):
 
 
 def message_display(text):
-    largeText = pygame.font.Font('freesansbold.ttf', 115)
+    rect = pygame.Rect(80, 40, 400, 30)
+    pygame.draw.rect(gameDisplay, white, rect)
+    largeText = pygame.font.Font('freesansbold.ttf', 30)
     TextSuf, TextRect = text_objects(text, largeText)
-    TextRect.center = ((display_width / 2), (display_height / 2))
+    TextRect.topleft = (80, 40)
     gameDisplay.blit(TextSuf, TextRect)
     pygame.display.update()
-    time.sleep(3)
-
-    game_loop_ai_vs_user()
 
 
-def game_over_show():
-    message_display('You loose!')
+def game_over_show(env, user_nr, ai_nr):
+    points_user = env.calculate_active_player(user_nr)["Points"]
+    points_ai = env.calculate_active_player(ai_nr)["Points"]
+    if points_user > points_ai:
+        message_display('You win with {} points! Ai points: {}'.format(points_user, points_ai))
+    else:
+        message_display('You lose with {} points! Ai points: {}'.format(points_user, points_ai))
+
 
 def ai_move(field, env, ai_number):
     ais_turn = True
@@ -153,6 +156,8 @@ def ai_move(field, env, ai_number):
         field = draw_move(action, field, dark_green)
         new_fields = new_full_fields(field, array_i, h, w)
         env.calculate_active_player(ai_number)["Points"] += new_fields
+        user_nr = 1 if ai_number == 2 else 2
+        print_points(env.calculate_active_player(user_nr)["Points"], env.calculate_active_player(ai_number)["Points"])
         if game_over(env):
             return field, True
         if new_fields != 0:
@@ -161,20 +166,26 @@ def ai_move(field, env, ai_number):
 
     return field, False
 
-
-
+def print_points(points_user, points_ai):
+    rect = pygame.Rect(80,40, 400, 30)
+    pygame.draw.rect(gameDisplay, white, rect)
+    myfont = pygame.font.SysFont(None, 40)
+    points = myfont.render("Points User: {}, Points Ai: {}".format(points_user, points_ai), 1, black)
+    gameDisplay.blit(points, (80,40))
 
 def game_loop_ai_vs_user():
+    gameDisplay.fill(white)
     gameexit = False
     gameover = False
     env = GameExtended()
+    print_points(0,0)
     rows, columns = env.rows, env.columns
     global lines
     lines = define_lines(rows, columns)
     field = [rows, columns]
-    user_turn = True
-    user_number = 0
-    ai_number = 1
+    user_number = 1
+    ai_number = 2
+    pygame.display.update()
 
     while not gameexit:
         for event in pygame.event.get():
@@ -182,7 +193,7 @@ def game_loop_ai_vs_user():
                 pygame.quit()
                 quit()
 
-            if event.type == pygame.MOUSEBUTTONUP and user_turn and not gameover:
+            if event.type == pygame.MOUSEBUTTONUP and not gameover:
                 pos = pygame.mouse.get_pos()
                 for idx, line in enumerate(lines):
                     array_i, h, w = convert_action_to_move(idx)
@@ -192,17 +203,21 @@ def game_loop_ai_vs_user():
                         array_i, h, w = convert_action_to_move(idx)
                         new_fields = new_full_fields(field, array_i, h, w)
                         env.calculate_active_player(user_number)["Points"] += new_fields
+                        print_points(env.calculate_active_player(user_number)["Points"], env.calculate_active_player(ai_number)["Points"])
                         if game_over(env):
                             gameover = True
                             break
                         if new_fields == 0:
-                            user_turn = False
+                            pygame.event.set_blocked(pygame.MOUSEBUTTONUP)
                             field, gameover = ai_move(field, env, ai_number)
-                            user_turn = True
+                            pygame.event.set_allowed(pygame.MOUSEBUTTONUP)
                         break
 
         if gameover:
-            print("over")
+            game_over_show(env, user_number, ai_number)
+            pygame.time.wait(3000)
+            game_loop_ai_vs_user()
+
 
         pygame.display.update()
         clock.tick(60)  # frames per second
