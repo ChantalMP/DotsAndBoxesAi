@@ -85,7 +85,7 @@ class GameExtended(Game):
         if not self.success:
             self.random_plays += 1
             array_i, height, width = self.random_move()
-        new_fields = newFullFields([self.rows, self.columns], array_i, height, width)
+        new_fields = new_full_fields([self.rows, self.columns], array_i, height, width)
         self.calculate_active_player(playernr)["Points"] += new_fields
 
     def _get_reward(self, playernr, old_score):
@@ -277,7 +277,7 @@ if __name__ == "__main__":
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
     # only needed for sgd
-    decay_rate = learning_rate/epoch
+    # decay_rate = learning_rate/epoch
     discount = 0.5
     model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
@@ -322,122 +322,114 @@ if __name__ == "__main__":
     callback = TensorBoard(log_path)
     callback.set_model(model)
 
-    testing_model = False
+    ai_player_1 = Ai(max_memory=max_memory, playernr=1, discount=discount)
+    ai_player_2 = Ai(max_memory=max_memory, playernr=2, discount=discount)
 
-    if not testing_model:
+    #     Train
+    game_count = 0
+    loss = 0.
+    for e in range(int(model_epochs_trained), epoch):
+        if e % 100 == 0 and e != model_epochs_trained:
+            verbose = True
+        else:
+            verbose = False
+        env = GameExtended()
+        loss = 0. if train_mode_immediate else loss
+        gameover = False
+        predicted = False
+        old_score_1 = False
+        input_old_1 = False
+        action_1 = False
+        input_1 = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
+        old_score_2 = False
+        input_old_2 = False
+        action_2 = False
+        input_2 = False
 
-        ai_player_1 = Ai(max_memory=max_memory, playernr=1, discount=discount)
-        ai_player_2 = Ai(max_memory=max_memory, playernr=2, discount=discount)
+        if verbose:
+            print("starting game")
+            print(field_to_str(env.rows, env.columns))
 
-        #     Train
-        game_count = 0
-        loss = 0.
-        for e in range(int(model_epochs_trained), epoch):
-            if e % 100 == 0 and e != model_epochs_trained:
-                verbose = True
-                print("Model name : " ,model_name)
-            else:
-                verbose = False
+        ai_2_played = False
+
+        # input_2 = output_1 and other way round
+        while not gameover:
+            # AIMOVE
+            input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input_1, gameover,
+                                                                                         ai_player_1, model, loss)
+            if ai_2_played:
+                loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_2, gameover,
+                                   batch_size)
+
+            if not gameover:
+                input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input_2, gameover,
+                                                                                             ai_player_2, model,
+                                                                                             loss)
+                ai_2_played = True
+                loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover,
+                                   batch_size)
+
+        # logging after each game saving with the epoch number.
+        if e % 50 == 0 and e != model_epochs_trained:
+            # play it against random
             env = GameExtended()
-            loss = 0. if train_mode_immediate else loss
+            input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
             gameover = False
             predicted = False
-            old_score_1 = False
-            input_old_1 = False
-            action_1 = False
-            input_1 = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
-            old_score_2 = False
-            input_old_2 = False
-            action_2 = False
-            input_2 = False
+            old_score = False
+            input_old = False
+            action = False
+            ai_wins = 0
+            random_wins = 0
+            ai_fields = 0
+            random_fields = 0
 
             if verbose:
-                print("starting game")
+                print("starting RANDOM game")
                 print(field_to_str(env.rows, env.columns))
-
-            ai_2_played = False
-
-            # input_2 = output_1 and other way round
             while not gameover:
                 # AIMOVE
-                input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input_1, gameover,
-                                                                                             ai_player_1, model, loss)
-                if ai_2_played:
-                    loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_2, gameover,
-                                       batch_size)
-
+                input_old = input
+                input, gameover, old_score, input_old, action, loss = ai_player_move(input_1, gameover, ai_player_1,
+                                                                                     model, loss)
+                # RANDOMMOVE
                 if not gameover:
-                    input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input_2, gameover,
-                                                                                                 ai_player_2, model,
-                                                                                                 loss)
-                    ai_2_played = True
-                    loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover,
-                                       batch_size)
+                    input, gameover = random_player_move(gameover, 2)
+                    evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
 
             # logging after each game saving with the epoch number.
-            if e % 50 == 0 and e != model_epochs_trained:
-                # play it against random
-                env = GameExtended()
-                input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
-                gameover = False
-                predicted = False
-                old_score = False
-                input_old = False
-                action = False
-                ai_wins = 0
-                random_wins = 0
-                ai_fields = 0
-                random_fields = 0
+            current_ai_field = env.player1["Points"]
+            current_random_field = env.player2["Points"]
+            if current_ai_field > current_random_field:
+                ai_wins = 1
+            elif current_random_field > current_ai_field:
+                random_wins = 1
+            ai_fields = current_ai_field
+            random_fields = current_random_field
 
-                if verbose:
-                    print("starting RANDOM game")
-                    print(field_to_str(env.rows, env.columns))
-                while not gameover:
-                    # AIMOVE
-                    input_old = input
-                    input, gameover, old_score, input_old, action, loss = ai_player_move(input_1, gameover, ai_player_1,
-                                                                                         model, loss)
-                    # RANDOMMOVE
-                    if not gameover:
-                        input, gameover = random_player_move(gameover, 2)
-                        evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
+            # final evolution
+            print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
+                                                                                         random_wins,
+                                                                                         random_fields))
+            model.save(model_temp_name, overwrite=True)
+            training_file = open('model_trained_till_epoch.txt', 'r')
+            out = ""
+            for line in training_file:
+                try:
+                    key, value = line.split(" ")
+                except ValueError:
+                    continue
+                if key == model_temp_name:
+                    out += model_temp_name + " " + str(e)
+                else:
+                    out += line
+                out += "\n"
+            training_file.close()
+            new_file = open('model_trained_till_epoch.txt', 'w')
+            new_file.write(out)
+            new_file.close()
 
-                # logging after each game saving with the epoch number.
-                current_ai_field = env.player1["Points"]
-                current_random_field = env.player2["Points"]
-                if current_ai_field > current_random_field:
-                    ai_wins = 1
-                elif current_random_field > current_ai_field:
-                    random_wins = 1
-                ai_fields = current_ai_field
-                random_fields = current_random_field
+            write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
+            print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
-                # final evolution
-                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
-                                                                                             random_wins,
-                                                                                             random_fields))
-                model.save(model_temp_name, overwrite=True)
-                training_file = open('model_trained_till_epoch.txt', 'r')
-                out = ""
-                for line in training_file:
-                    try:
-                        key, value = line.split(" ")
-                    except ValueError:
-                        continue
-                    if key == model_temp_name:
-                        out += model_temp_name + " " + str(e)
-                    else:
-                        out += line
-                    out += "\n"
-                training_file.close()
-                new_file = open('model_trained_till_epoch.txt', 'w')
-                new_file.write(out)
-                new_file.close()
-
-                write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
-                print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
-
-        model.save(model_name, overwrite=False)
-
-    else:
-        pass
+    model.save(model_name, overwrite=False)
