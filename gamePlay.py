@@ -1,6 +1,6 @@
 import random
 from gameView import init_Field, field_to_str, test_field_full, width, height
-from gameLogic import validate_move, newFullField, game_over
+from gameLogic import validate_move, newFullFields, game_over
 
 
 # give random field and check if valid

@@ -15,10 +15,14 @@ from keras.callbacks import TensorBoard
 from keras import losses
 from keras import optimizers
 
+#similar result but faster then True
 train_mode_immediate = False
-epsilon = 1.  # random moves
+ # random moves
+epsilon_max = 1.
 epsilon_min = 0.01
+epsilon = epsilon_max
 epsilon_decay = 0.995
+
 
 
 class GameExtended(Game):
@@ -81,7 +85,7 @@ class GameExtended(Game):
         if not self.success:
             self.random_plays += 1
             array_i, height, width = self.random_move()
-        new_fields = newFullField([self.rows, self.columns], array_i, height, width)
+        new_fields = newFullFields([self.rows, self.columns], array_i, height, width)
         self.calculate_active_player(playernr)["Points"] += new_fields
 
     def _get_reward(self, playernr, old_score):
@@ -257,6 +261,8 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
     if gameover:
         if epsilon > epsilon_min:
             epsilon *= epsilon_decay
+        else:
+            epsilon = epsilon_max
 
     return loss
 
@@ -268,8 +274,10 @@ if __name__ == "__main__":
     hidden_size_0 = num_actions * 2
     hidden_size_1 = num_actions * 4
     batch_size = 1 if train_mode_immediate else 50
-    learning_rate = 0.05
-    # TODO , learning_rate 0.01 test
+    learning_rate = 1.0
+    # learning_rate 1.0 for adadelta
+    # only needed for sgd
+    decay_rate = learning_rate/epoch
     discount = 0.5
     model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
@@ -285,7 +293,7 @@ if __name__ == "__main__":
     model.add(Dense(hidden_size_1, activation='relu'))
     model.add(Dense(hidden_size_0, activation='relu'))
     model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=optimizers.sgd(lr=learning_rate), loss=losses.mse)
+    model.compile(optimizer=optimizers.adadelta(lr=learning_rate), loss=losses.mse)
     if os.path.isfile(model_temp_name):
         model = load_model(model_temp_name)
         print("model_loaded")
@@ -309,7 +317,7 @@ if __name__ == "__main__":
 
 
 
-    # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- Works on mac logs are saved on the project directory
+    # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- logs are saved on the project directory
     log_path = './logs/' + model_name
     callback = TensorBoard(log_path)
     callback.set_model(model)
@@ -327,6 +335,7 @@ if __name__ == "__main__":
         for e in range(int(model_epochs_trained), epoch):
             if e % 100 == 0 and e != model_epochs_trained:
                 verbose = True
+                print("Model name : " ,model_name)
             else:
                 verbose = False
             env = GameExtended()

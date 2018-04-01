@@ -37,3 +37,17 @@ epsilon 2 cc
 
 
 https://keras.io/activations/
+
+
+mm500_hsmin288_hsmax576_lr1.0_d0.5_hl3_na144_tiFalseadadelta.h5
+mm500_hsmin288_hsmax576_lr0.1_d0.5_hl3_na144_tiFalsesgd_momentum.h5(momentum=0.8 , decay_rate = learning_rate/epochs)
+have both learned to build squares and only take at the end
+
+
+different_Reward(#different reward if the oppenents turn is next, your turn: you win best reward, else opponent does
+                if new_fields == 0:
+                    targets[i, action_t] = reward_t - self.discount * Q_sa
+                else:
+                    targets[i, action_t] = reward_t + self.discount * Q_sa
+                    )
+                    did not work as expected. It learned to give fields to the oppenent.

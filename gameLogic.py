@@ -1,6 +1,6 @@
 from gameView import width, height
 
-def newFullField(field, which, h, w):
+def newFullFields(field, which, h, w):
     ret = 0
     if which == 0:#horizontal
         #field above
