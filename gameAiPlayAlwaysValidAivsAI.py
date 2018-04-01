@@ -15,14 +15,13 @@ from keras.callbacks import TensorBoard
 from keras import losses
 from keras import optimizers
 
-#similar result but faster then True
+# similar result but faster then True
 train_mode_immediate = False
- # random moves
+# random moves
 epsilon_max = 1.
 epsilon_min = 0.01
 epsilon = epsilon_max
 epsilon_decay = 0.995
-
 
 
 class GameExtended(Game):
@@ -314,8 +313,6 @@ if __name__ == "__main__":
         training_file = open('model_trained_till_epoch.txt', 'a')
         training_file.write("\n" + model_temp_name + " " + str(0))
         training_file.close()
-
-
 
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- logs are saved on the project directory
     log_path = './logs/' + model_name
