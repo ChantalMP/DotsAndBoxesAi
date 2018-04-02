@@ -21,7 +21,8 @@ train_mode_immediate = False
 epsilon_max = 1.
 epsilon_min = 0.01
 epsilon = epsilon_max
-epsilon_decay = 0.995
+epsilon_decay = 0.99998
+#maybe just 0.999
 
 
 class GameExtended(Game):
@@ -260,15 +261,15 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
     if gameover:
         if epsilon > epsilon_min:
             epsilon *= epsilon_decay
-        else:
-            epsilon = epsilon_max
+        # else:
+        #     epsilon = epsilon_max
 
     return loss
 
 
 if __name__ == "__main__":
 
-    epoch = 200000
+    epoch = 400000
     max_memory = 1 if train_mode_immediate else 500
     hidden_size_0 = num_actions * 2
     hidden_size_1 = num_actions * 4
@@ -276,9 +277,9 @@ if __name__ == "__main__":
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
     # only needed for sgd
-    # decay_rate = learning_rate/epoch
+    decay_rate = learning_rate/epoch
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}evenmoreslowepsi.h5".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
                                                                           train_mode_immediate)
     print(model_name)
@@ -297,7 +298,9 @@ if __name__ == "__main__":
         model = load_model(model_temp_name)
         print("model_loaded")
 
-    training_file = open('model_trained_till_epoch.txt', 'r')
+    if not os.path.isfile('{}.txt'.format(model_name)):
+        training_file = open('{}.txt'.format(model_name),'w')
+    training_file = open('{}.txt'.format(model_name), 'r')
     model_save_found = False
     for line in training_file:
         try:
@@ -310,7 +313,7 @@ if __name__ == "__main__":
     training_file.close()
     if model_save_found == False:
         print("epoch save not found defaulting to 0")
-        training_file = open('model_trained_till_epoch.txt', 'a')
+        training_file = open('{}.txt'.format(model_name), 'a')
         training_file.write("\n" + model_temp_name + " " + str(0))
         training_file.close()
 
@@ -325,6 +328,7 @@ if __name__ == "__main__":
     #     Train
     game_count = 0
     loss = 0.
+    print(model_epochs_trained)
     for e in range(int(model_epochs_trained), epoch):
         if e % 100 == 0 and e != model_epochs_trained:
             verbose = True
@@ -409,7 +413,7 @@ if __name__ == "__main__":
                                                                                          random_wins,
                                                                                          random_fields))
             model.save(model_temp_name, overwrite=True)
-            training_file = open('model_trained_till_epoch.txt', 'r')
+            training_file = open('{}.txt'.format(model_name), 'r')
             out = ""
             for line in training_file:
                 try:
@@ -422,7 +426,7 @@ if __name__ == "__main__":
                     out += line
                 out += "\n"
             training_file.close()
-            new_file = open('model_trained_till_epoch.txt', 'w')
+            new_file = open('{}.txt'.format(model_name), 'w')
             new_file.write(out)
             new_file.close()
 

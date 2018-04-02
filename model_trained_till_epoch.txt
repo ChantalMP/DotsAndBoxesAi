@@ -1,3 +1,0 @@
-temp_mm1_hsmin288_hsmax576_lr0.05_d0.5_hl3_na144_tiTrue.h5 50
-
-temp_mm500_hsmin288_hsmax576_lr0.05_d0.5_hl3_na144_tiFalse.h5 550
