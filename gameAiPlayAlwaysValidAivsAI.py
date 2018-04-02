@@ -21,9 +21,10 @@ train_mode_immediate = False
 epsilon_max = 1.
 epsilon_min = 0.01
 epsilon = epsilon_max
-epsilon_decay = 0.99998
-#maybe just 0.999
-
+epsilon_decay_down = 0.99996
+epsilon_decay_up = 1 + (1 - epsilon_decay_down)
+epsilon_decay = epsilon_decay_down
+epsilon_rising = False
 
 class GameExtended(Game):
     def __init__(self):
@@ -259,10 +260,10 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
             loss = model.train_on_batch(inputs, targets)
 
     if gameover:
-        if epsilon > epsilon_min:
+        if epsilon > epsilon_min and epsilon > epsilon_max:
             epsilon *= epsilon_decay
-        # else:
-        #     epsilon = epsilon_max
+        else:
+            epsilon_decay = epsilon_decay_up if epsilon_decay == epsilon_decay_down else epsilon_decay_down
 
     return loss
 
@@ -277,9 +278,9 @@ if __name__ == "__main__":
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
     # only needed for sgd
-    decay_rate = learning_rate/epoch
+    # decay_rate = learning_rate/epoch
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}evenmoreslowepsi.h5".format(max_memory, hidden_size_0, hidden_size_1,
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
                                                                           train_mode_immediate)
     print(model_name)
@@ -332,6 +333,7 @@ if __name__ == "__main__":
     for e in range(int(model_epochs_trained), epoch):
         if e % 100 == 0 and e != model_epochs_trained:
             verbose = True
+            print(model_name)
         else:
             verbose = False
         env = GameExtended()

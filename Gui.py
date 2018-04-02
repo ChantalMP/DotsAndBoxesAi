@@ -21,7 +21,7 @@ dark_green = (0,155,0)
 blue = (0, 20, 235)
 dark_blue = (0, 0, 155)
 
-model_name = "temp_mm500_hsmin288_hsmax576_lr0.05_d0.5_hl3_na144_tiFalse.h5"
+model_name = "temp_mm500_hsmin288_hsmax576_lr1.0_d0.5_hl3_na144_tiFalseslowepsi.h5"
 model = load_model(model_name)
 
 global lines
@@ -215,11 +215,11 @@ def game_loop_ai_vs_user():
 
         if gameover:
             game_over_show(env, user_number, ai_number)
-            pygame.time.wait(3000)
+            pygame.time.wait(5000)
             game_loop_ai_vs_user()
 
 
         pygame.display.update()
-        clock.tick(60)  # frames per second
+        clock.tick(10)  # frames per second
 
 game_loop_ai_vs_user()
