@@ -260,10 +260,11 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
             loss = model.train_on_batch(inputs, targets)
 
     if gameover:
-        if epsilon > epsilon_min and epsilon > epsilon_max:
-            epsilon *= epsilon_decay
-        else:
-            epsilon_decay = epsilon_decay_up if epsilon_decay == epsilon_decay_down else epsilon_decay_down
+        if epsilon < epsilon_min:
+            epsilon_decay = epsilon_decay_up
+        elif epsilon > epsilon_max:
+            epsilon_decay = epsilon_decay_down
+        epsilon *= epsilon_decay
 
     return loss
 
@@ -280,7 +281,7 @@ if __name__ == "__main__":
     # only needed for sgd
     # decay_rate = learning_rate/epoch
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}.h5".format(max_memory, hidden_size_0, hidden_size_1,
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}_smoothepsi.h5_".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
                                                                           train_mode_immediate)
     print(model_name)

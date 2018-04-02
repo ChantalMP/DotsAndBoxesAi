@@ -1,0 +1,3 @@
+temp_mm500_hsmin288_hsmax576_lr1.0_d0.3_hl3_na144_tiFalseadadelta.h5 300200
+
+temp_mm500_hsmin288_hsmax576_lr1.0_d0.8_hl3_na144_tiFalseadadelta.h5 318650
