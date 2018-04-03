@@ -273,15 +273,15 @@ if __name__ == "__main__":
 
     epoch = 400000
     max_memory = 1 if train_mode_immediate else 500
-    hidden_size_0 = num_actions * 2
-    hidden_size_1 = num_actions * 4
+    hidden_size_0 = num_actions * 3
+    hidden_size_1 = num_actions * 6
     batch_size = 1 if train_mode_immediate else 50
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
     # only needed for sgd
     # decay_rate = learning_rate/epoch
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}_smoothepsi.h5_".format(max_memory, hidden_size_0, hidden_size_1,
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}_smoothepsi.h5".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
                                                                           train_mode_immediate)
     print(model_name)
@@ -374,7 +374,7 @@ if __name__ == "__main__":
                                    batch_size)
 
         # logging after each game saving with the epoch number.
-        if e % 50 == 0 and e != model_epochs_trained:
+        if e % 4 == 0 and e != model_epochs_trained: #play 1 4th of games against random
             # play it against random
             env = GameExtended()
             input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
@@ -412,9 +412,18 @@ if __name__ == "__main__":
             random_fields = current_random_field
 
             # final evolution
-            print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
+            if verbose:
+                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
                                                                                          random_wins,
+
                                                                                          random_fields))
+
+            write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
+            if verbose:
+                print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
+
+
+        if e % 50 == 0 and e != model_epochs_trained:
             model.save(model_temp_name, overwrite=True)
             training_file = open('{}.txt'.format(model_name), 'r')
             out = ""
@@ -432,8 +441,5 @@ if __name__ == "__main__":
             new_file = open('{}.txt'.format(model_name), 'w')
             new_file.write(out)
             new_file.close()
-
-            write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
-            print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
     model.save(model_name, overwrite=False)
