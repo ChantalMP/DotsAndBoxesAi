@@ -273,8 +273,8 @@ if __name__ == "__main__":
 
     epoch = 400000
     max_memory = 1 if train_mode_immediate else 500
-    hidden_size_0 = num_actions * 3
-    hidden_size_1 = num_actions * 6
+    hidden_size_0 = num_actions * 2
+    hidden_size_1 = num_actions * 4
     batch_size = 1 if train_mode_immediate else 50
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
@@ -374,7 +374,7 @@ if __name__ == "__main__":
                                    batch_size)
 
         # logging after each game saving with the epoch number.
-        if e % 4 == 0 and e != model_epochs_trained: #play 1 4th of games against random
+        if e % 6 == 0 and e != model_epochs_trained: #play 1 4th of games against random
             # play it against random
             env = GameExtended()
             input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
