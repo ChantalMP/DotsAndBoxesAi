@@ -273,8 +273,8 @@ if __name__ == "__main__":
 
     epoch = 400000
     max_memory = 1 if train_mode_immediate else 500
-    hidden_size_0 = num_actions * 2
-    hidden_size_1 = num_actions * 4
+    hidden_size_0 = num_actions * 3
+    hidden_size_1 = num_actions * 6
     batch_size = 1 if train_mode_immediate else 50
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
@@ -304,6 +304,7 @@ if __name__ == "__main__":
         training_file = open('{}.txt'.format(model_name),'w')
     training_file = open('{}.txt'.format(model_name), 'r')
     model_save_found = False
+    epsilon_found = False
     for line in training_file:
         try:
             key, value = line.split(" ")
@@ -312,11 +313,23 @@ if __name__ == "__main__":
         if key == model_temp_name:
             model_epochs_trained = value
             model_save_found = True
+        if key == "epsilon":
+            epsilon = float(value)
+            epsilon_found = True
+        if key == "epsilondecay":
+            epsilon_decay == float(value)
     training_file.close()
     if model_save_found == False:
         print("epoch save not found defaulting to 0")
         training_file = open('{}.txt'.format(model_name), 'a')
         training_file.write("\n" + model_temp_name + " " + str(0))
+        training_file.close()
+
+    if epsilon_found == False:
+        print("epsilon not found defaulting given start values")
+        training_file = open('{}.txt'.format(model_name), 'a')
+        training_file.write("\n" + "epsilon" + " " + str(epsilon))
+        training_file.write("\n" + "epsilondecay" + " " + str(epsilon_decay))
         training_file.close()
 
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- logs are saved on the project directory
@@ -331,6 +344,7 @@ if __name__ == "__main__":
     game_count = 0
     loss = 0.
     print(model_epochs_trained)
+    print("epsilon: {}, decay: {}".format(epsilon, epsilon_decay))
     for e in range(int(model_epochs_trained), epoch):
         if e % 100 == 0 and e != model_epochs_trained:
             verbose = True
@@ -421,6 +435,7 @@ if __name__ == "__main__":
             write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
             if verbose:
                 print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
+                print("Epsilon is {} with Epsilon Decay {}".format(epsilon, epsilon_decay))
 
 
         if e % 50 == 0 and e != model_epochs_trained:
@@ -434,6 +449,10 @@ if __name__ == "__main__":
                     continue
                 if key == model_temp_name:
                     out += model_temp_name + " " + str(e)
+                elif key == "epsilon":
+                    out += "\nepsilon " + str(epsilon)
+                elif key == "epsilondecay":
+                    out += "\nepsilondecay " + str(epsilon_decay)
                 else:
                     out += line
                 out += "\n"
