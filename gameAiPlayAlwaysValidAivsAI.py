@@ -21,9 +21,10 @@ train_mode_immediate = False
 epsilon_max = 1.
 epsilon_min = 0.01
 epsilon = epsilon_max
-epsilon_decay = 0.99998
-#maybe just 0.999
-
+epsilon_decay_down = 0.99996
+epsilon_decay_up = 1 + (1 - epsilon_decay_down)
+epsilon_decay = epsilon_decay_down
+epsilon_rising = False
 
 class GameExtended(Game):
     def __init__(self):
@@ -264,10 +265,11 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
             loss = model.train_on_batch(inputs, targets)
 
     if gameover:
-        if epsilon > epsilon_min:
-            epsilon *= epsilon_decay
-        # else:
-        #     epsilon = epsilon_max
+        if epsilon < epsilon_min:
+            epsilon_decay = epsilon_decay_up
+        elif epsilon > epsilon_max:
+            epsilon_decay = epsilon_decay_down
+        epsilon *= epsilon_decay
 
     return loss
 
@@ -276,15 +278,15 @@ if __name__ == "__main__":
 
     epoch = 800000
     max_memory = 1 if train_mode_immediate else 500
-    hidden_size_0 = num_actions * 2
-    hidden_size_1 = num_actions * 4
+    hidden_size_0 = num_actions * 3
+    hidden_size_1 = num_actions * 6
     batch_size = 1 if train_mode_immediate else 50
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
     # only needed for sgd
-    decay_rate = learning_rate/epoch
+    # decay_rate = learning_rate/epoch
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}evenmoreslowepsi.h5".format(max_memory, hidden_size_0, hidden_size_1,
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}_smoothepsi.h5".format(max_memory, hidden_size_0, hidden_size_1,
                                                                           learning_rate, discount, "3", num_actions,
                                                                           train_mode_immediate)
     print(model_name)
@@ -307,6 +309,7 @@ if __name__ == "__main__":
         training_file = open('{}.txt'.format(model_name),'w')
     training_file = open('{}.txt'.format(model_name), 'r')
     model_save_found = False
+    epsilon_found = False
     for line in training_file:
         try:
             key, value = line.split(" ")
@@ -315,11 +318,23 @@ if __name__ == "__main__":
         if key == model_temp_name:
             model_epochs_trained = value
             model_save_found = True
+        if key == "epsilon":
+            epsilon = float(value)
+            epsilon_found = True
+        if key == "epsilondecay":
+            epsilon_decay == float(value)
     training_file.close()
     if model_save_found == False:
         print("epoch save not found defaulting to 0")
         training_file = open('{}.txt'.format(model_name), 'a')
         training_file.write("\n" + model_temp_name + " " + str(0))
+        training_file.close()
+
+    if epsilon_found == False:
+        print("epsilon not found defaulting given start values")
+        training_file = open('{}.txt'.format(model_name), 'a')
+        training_file.write("\n" + "epsilon" + " " + str(epsilon))
+        training_file.write("\n" + "epsilondecay" + " " + str(epsilon_decay))
         training_file.close()
 
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- logs are saved on the project directory
@@ -334,9 +349,11 @@ if __name__ == "__main__":
     game_count = 0
     loss = 0.
     print(model_epochs_trained)
+    print("epsilon: {}, decay: {}".format(epsilon, epsilon_decay))
     for e in range(int(model_epochs_trained), epoch):
         if e % 100 == 0 and e != model_epochs_trained:
             verbose = True
+            print(model_name)
         else:
             verbose = False
         env = GameExtended()
@@ -376,7 +393,7 @@ if __name__ == "__main__":
                                    batch_size)
 
         # logging after each game saving with the epoch number.
-        if e % 50 == 0 and e != model_epochs_trained:
+        if e % 6 == 0 and e != model_epochs_trained: #play 1 4th of games against random
             # play it against random
             env = GameExtended()
             input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
@@ -414,9 +431,19 @@ if __name__ == "__main__":
             random_fields = current_random_field
 
             # final evolution
-            print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
+            if verbose:
+                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
                                                                                          random_wins,
+
                                                                                          random_fields))
+
+            write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
+            if verbose:
+                print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
+                print("Epsilon is {} with Epsilon Decay {}".format(epsilon, epsilon_decay))
+
+
+        if e % 50 == 0 and e != model_epochs_trained:
             model.save(model_temp_name, overwrite=True)
             training_file = open('{}.txt'.format(model_name), 'r')
             out = ""
@@ -427,6 +454,10 @@ if __name__ == "__main__":
                     continue
                 if key == model_temp_name:
                     out += model_temp_name + " " + str(e)
+                elif key == "epsilon":
+                    out += "\nepsilon " + str(epsilon)
+                elif key == "epsilondecay":
+                    out += "\nepsilondecay " + str(epsilon_decay)
                 else:
                     out += line
                 out += "\n"
@@ -434,8 +465,5 @@ if __name__ == "__main__":
             new_file = open('{}.txt'.format(model_name), 'w')
             new_file.write(out)
             new_file.close()
-
-            write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
-            print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
 
     model.save(model_name, overwrite=False)
