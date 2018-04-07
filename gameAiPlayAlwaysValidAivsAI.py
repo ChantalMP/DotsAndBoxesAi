@@ -145,6 +145,7 @@ class Ai:
 
 # tensorboard logging method simplified for our project
 def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
+    global epsilon
     summary = tf.Summary()
     # add train_loss
     summary_value = summary.value.add()
@@ -158,6 +159,10 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     summary_value = summary.value.add()
     summary_value.simple_value = ai_fields
     summary_value.tag = "ai_fields"
+    # current_epsilon
+    summary_value = summary.value.add()
+    summary_value.simple_value = epsilon
+    summary_value.tag = "epsilon"
     callback.writer.add_summary(summary, batch_no)
     callback.writer.flush()
 
@@ -269,7 +274,7 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
 
 if __name__ == "__main__":
 
-    epoch = 400000
+    epoch = 800000
     max_memory = 1 if train_mode_immediate else 500
     hidden_size_0 = num_actions * 2
     hidden_size_1 = num_actions * 4
