@@ -18,7 +18,8 @@ from keras import optimizers
 # similar result but faster then True
 train_mode_immediate = False
 # random moves
-epsilon_max = 1.
+
+epsilon_max = 1.0
 epsilon_min = 0.01
 epsilon = epsilon_max
 epsilon_decay_down = 0.99996
@@ -252,6 +253,7 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
 
 def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameover, batch_size):
     global epsilon, epsilon_min, epsilon_decay
+
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
@@ -276,7 +278,7 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
 
 if __name__ == "__main__":
 
-    epoch = 800000
+    epoch = 8000000
     max_memory = 1 if train_mode_immediate else 500
     hidden_size_0 = num_actions * 3
     hidden_size_1 = num_actions * 6
@@ -310,6 +312,7 @@ if __name__ == "__main__":
     training_file = open('{}.txt'.format(model_name), 'r')
     model_save_found = False
     epsilon_found = False
+
     for line in training_file:
         try:
             key, value = line.split(" ")
@@ -322,7 +325,7 @@ if __name__ == "__main__":
             epsilon = float(value)
             epsilon_found = True
         if key == "epsilondecay":
-            epsilon_decay == float(value)
+            epsilon_decay = float(value)
     training_file.close()
     if model_save_found == False:
         print("epoch save not found defaulting to 0")
@@ -337,6 +340,7 @@ if __name__ == "__main__":
         training_file.write("\n" + "epsilondecay" + " " + str(epsilon_decay))
         training_file.close()
 
+    print("epsilon: {}, decay: {}".format(epsilon, epsilon_decay))
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- logs are saved on the project directory
     log_path = './logs/' + model_name
     callback = TensorBoard(log_path)
@@ -349,7 +353,6 @@ if __name__ == "__main__":
     game_count = 0
     loss = 0.
     print(model_epochs_trained)
-    print("epsilon: {}, decay: {}".format(epsilon, epsilon_decay))
     for e in range(int(model_epochs_trained), epoch):
         if e % 100 == 0 and e != model_epochs_trained:
             verbose = True
