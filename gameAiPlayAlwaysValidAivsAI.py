@@ -204,7 +204,7 @@ def random_player_move(gameover, playernr):
             random_should_play = True
         if verbose:
             print("Random PLAYED")
-            print(field_to_str(env.rows, env.columns))
+            # print(field_to_str(env.rows, env.columns))
 
     return input, gameover
 
@@ -243,7 +243,7 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
             ai_should_play = True
         if verbose:
             print("AI {} PLAYED".format(ai.playernr))
-            print(field_to_str(env.rows, env.columns))
+            # print(field_to_str(env.rows, env.columns))
         if ai_should_play:
             loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover, batch_size)
 
@@ -369,9 +369,11 @@ if __name__ == "__main__":
         action_2 = False
         input_2 = False
 
+
+        # printing fields don't really help a lot right now i think
         if verbose:
             print("starting game")
-            print(field_to_str(env.rows, env.columns))
+            # print(field_to_str(env.rows, env.columns))
 
         ai_2_played = False
 
@@ -409,7 +411,7 @@ if __name__ == "__main__":
 
             if verbose:
                 print("starting RANDOM game")
-                print(field_to_str(env.rows, env.columns))
+                # print(field_to_str(env.rows, env.columns))
             while not gameover:
                 # AIMOVE
                 input_old = input
