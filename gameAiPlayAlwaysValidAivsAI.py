@@ -226,6 +226,7 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
         if np.random.rand() <= epsilon:
             valid = False
             if verbose:
+                pass
                 # print("THIS WAS JUST A GUESS")
             while not valid:
                 action = random.randint(0, num_actions - 1)
