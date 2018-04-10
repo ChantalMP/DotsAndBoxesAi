@@ -203,7 +203,8 @@ def random_player_move(gameover, playernr):
         if new_points > old_points:
             random_should_play = True
         if verbose:
-            print("Random PLAYED")
+            pass
+            # print("Random PLAYED")
             # print(field_to_str(env.rows, env.columns))
 
     return input, gameover
@@ -412,7 +413,8 @@ if __name__ == "__main__":
             random_fields = 0
 
             if verbose:
-                print("starting RANDOM game")
+                pass
+                # print("starting RANDOM game")
                 # print(field_to_str(env.rows, env.columns))
             while not gameover:
                 # AIMOVE
