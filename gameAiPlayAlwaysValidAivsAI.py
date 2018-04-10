@@ -22,10 +22,9 @@ train_mode_immediate = False
 epsilon_max = 1.0
 epsilon_min = 0.01
 epsilon = epsilon_max
-epsilon_decay_down = 0.99996
-epsilon_decay_up = 1 + (1 - epsilon_decay_down)
-epsilon_decay = epsilon_decay_down
-epsilon_rising = False
+# epsilon_decay_down = 0.999999
+# epsilon_decay_up = 1 + (1 - epsilon_decay_down)
+epsilon_decay = 0.999999
 
 class GameExtended(Game):
     def __init__(self):
@@ -267,11 +266,9 @@ def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameov
             loss = model.train_on_batch(inputs, targets)
 
     if gameover:
-        if epsilon < epsilon_min:
-            epsilon_decay = epsilon_decay_up
-        elif epsilon > epsilon_max:
-            epsilon_decay = epsilon_decay_down
-        epsilon *= epsilon_decay
+        if epsilon > epsilon_min:
+            epsilon *= epsilon_decay
+
 
     return loss
 
@@ -280,8 +277,8 @@ if __name__ == "__main__":
 
     epoch = 8000000
     max_memory = 1 if train_mode_immediate else 500
-    hidden_size_0 = num_actions * 3
-    hidden_size_1 = num_actions * 6
+    hidden_size_0 = num_actions * 12
+    hidden_size_1 = num_actions * 24
     batch_size = 1 if train_mode_immediate else 50
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
@@ -396,7 +393,7 @@ if __name__ == "__main__":
                                    batch_size)
 
         # logging after each game saving with the epoch number.
-        if e % 6 == 0 and e != model_epochs_trained: #play 1 4th of games against random
+        if e % 10 == 0 and e != model_epochs_trained: #play 1 4th of games against random
             # play it against random
             env = GameExtended()
             input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
