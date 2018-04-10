@@ -226,7 +226,7 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
         if np.random.rand() <= epsilon:
             valid = False
             if verbose:
-                print("THIS WAS JUST A GUESS")
+                # print("THIS WAS JUST A GUESS")
             while not valid:
                 action = random.randint(0, num_actions - 1)
                 array_i, h, w = env.convert_action_to_move(action)
@@ -242,7 +242,8 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
         if new_points > old_points:
             ai_should_play = True
         if verbose:
-            print("AI {} PLAYED".format(ai.playernr))
+            pass
+            # print("AI {} PLAYED".format(ai.playernr))
             # print(field_to_str(env.rows, env.columns))
         if ai_should_play:
             loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover, batch_size)
