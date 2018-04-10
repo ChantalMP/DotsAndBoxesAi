@@ -24,7 +24,7 @@ epsilon_min = 0.01
 epsilon = epsilon_max
 # epsilon_decay_down = 0.999999
 # epsilon_decay_up = 1 + (1 - epsilon_decay_down)
-epsilon_decay = 0.999999
+epsilon_decay = 0.99999
 
 class GameExtended(Game):
     def __init__(self):
