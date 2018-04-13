@@ -1,0 +1,3 @@
+temp_mm500_hsmin1728_hsmax3456_lr1.0_d0.5_hl3_na144_tiFalse_smoothepsi.h5 59950
+
+epsilon 0.31559683662615173
