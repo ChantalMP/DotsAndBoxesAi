@@ -19,12 +19,9 @@ from keras import optimizers
 train_mode_immediate = False
 # random moves
 
-epsilon_max = 1.0
-epsilon_min = 0.01
-epsilon = epsilon_max
-# epsilon_decay_down = 0.999999
-# epsilon_decay_up = 1 + (1 - epsilon_decay_down)
-epsilon_decay = 0.99999
+
+epsilon = 0.1
+
 
 class GameExtended(Game):
     def __init__(self):
@@ -112,11 +109,27 @@ class GameExtended(Game):
 
 
 class Ai:
-    def __init__(self, playernr, max_memory=100, discount=.9):
+    def __init__(self, playernr, model_name, max_memory=100, discount=.9):
         self.playernr = playernr
         self.max_memory = max_memory
         self.memory = list()
         self.discount = discount
+        self.model_name = model_name
+        self.model = self.init_model(self.model_name)
+
+    def init_model(self, model_name):
+        #     keras
+        model = Sequential()
+        model.add(Dense(hidden_size_0, input_shape=(num_actions,), activation='relu'))
+        model.add(Dense(hidden_size_1, activation='relu'))
+        model.add(Dense(hidden_size_0, activation='relu'))
+        model.add(Dense(num_actions))  # output layer
+        model.compile(optimizer=optimizers.adadelta(lr=learning_rate), loss=losses.mse)
+        if os.path.isfile(temp_model(self.model_name)):
+            model = load_model(temp_model(self.model_name))
+            print("model_loaded")
+
+        return model
 
     def remember(self, states, gameover):
         self.memory.append([states, gameover])
@@ -160,10 +173,6 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     summary_value = summary.value.add()
     summary_value.simple_value = ai_fields
     summary_value.tag = "ai_fields"
-    # current_epsilon
-    summary_value = summary.value.add()
-    summary_value.simple_value = epsilon
-    summary_value.tag = "epsilon"
     callback.writer.add_summary(summary, batch_no)
     callback.writer.flush()
 
@@ -210,7 +219,7 @@ def random_player_move(gameover, playernr):
     return input, gameover
 
 
-def ai_player_move(input, gameover, ai: Ai, model, loss):
+def ai_player_move(input, gameover, ai: Ai, loss):
     action = False
     old_score = False
     input_old = False
@@ -234,7 +243,7 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
                 array_i, h, w = env.convert_action_to_move(action)
                 valid = validate_move([env.rows, env.columns], array_i, h, w)
         else:
-            q = model.predict(input_old)
+            q = ai.model.predict(input_old)
             action = find_best(q[0], env)
             predicted = True
         # apply action, get rewards and new state
@@ -248,36 +257,55 @@ def ai_player_move(input, gameover, ai: Ai, model, loss):
             # print("AI {} PLAYED".format(ai.playernr))
             # print(field_to_str(env.rows, env.columns))
         if ai_should_play:
-            loss = evaluate_ai(loss, ai, model, old_score, input_old, action, input, gameover, batch_size)
+            winner = None
+            if gameover:
+                winnernr = 1 if env.player1["Points"] > env.player2["Points"] else 2
+                if ai.playernr == winnernr:
+                    winner = True
+                else:
+                    winner = False
+            if champion != ai.playernr:
+                loss = evaluate_ai(loss, ai, old_score, input_old, action, input, gameover, batch_size, winner=winner)
 
     return input, gameover, old_score, input_old, action, loss
 
 
-def evaluate_ai(loss, ai: Ai, model, old_score, input_old, action, input, gameover, batch_size):
+def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, batch_size, winner=None):
     global epsilon, epsilon_min, epsilon_decay
 
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
+    if winner == True:
+        reward += 4
+    elif winner == False:
+        reward -= 4
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
     # adapt model
     if train_mode_immediate:
-        inputs, targets = ai.get_batch(model, batch_size=batch_size)
-        loss += model.train_on_batch(inputs, targets)
+        inputs, targets = ai.get_batch(ai.model, batch_size=batch_size)
+        loss += ai.model.train_on_batch(inputs, targets)
     else:
         if gameover:
-            inputs, targets = ai.get_batch(model, batch_size=batch_size)
-            loss = model.train_on_batch(inputs, targets)
-
-    if gameover:
-        if epsilon > epsilon_min:
-            epsilon *= epsilon_decay
-
+            inputs, targets = ai.get_batch(ai.model, batch_size=batch_size)
+            loss = ai.model.train_on_batch(inputs, targets)
 
     return loss
 
 
-if __name__ == "__main__":
+def temp_model(model_name):
+    return "temp_" + model_name
 
+
+def learning_ai(ai_1, ai_2, champion):
+    if champion == 1:
+        return ai_2
+    else:
+        return ai_1
+
+
+if __name__ == "__main__":
+    # TODO
+    # randomly choose best move from best 5
     epoch = 8000000
     max_memory = 1 if train_mode_immediate else 500
     hidden_size_0 = num_actions * 12
@@ -288,28 +316,31 @@ if __name__ == "__main__":
     # only needed for sgd
     # decay_rate = learning_rate/epoch
     discount = 0.5
-    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}_smoothepsi.h5".format(max_memory, hidden_size_0, hidden_size_1,
-                                                                          learning_rate, discount, "3", num_actions,
-                                                                          train_mode_immediate)
-    print(model_name)
-    model_temp_name = "temp_" + model_name
+    champion = 1
+    if not os.path.isfile('champion.txt'):
+        champion_file = open('champion.txt', 'w')
+        champion_file.write("1")
+        champion_file.close()
+    else:
+        champion_file = open('champion.txt', 'r')
+        for line in champion_file:
+            champion = int(line)
+        champion_file.close()
+
+    model_name = "mm{}_hsmin{}_hsmax{}_lr{}_d{}_hl{}_na{}_ti{}".format(max_memory, hidden_size_0, hidden_size_1,
+                                                                       learning_rate, discount, "3", num_actions,
+                                                                       train_mode_immediate)
+    model_name_1 = model_name + "_1.h5"
+    model_name_2 = model_name + "_2.h5"
+    ai_player_1 = Ai(max_memory=max_memory, playernr=1, discount=discount, model_name=model_name_1)
+    ai_player_2 = Ai(max_memory=max_memory, playernr=2, discount=discount, model_name=model_name_2)
+    model_name_1 = "temp_" + model_name_1
+    model_name_2 = "temp_" + model_name_2
     model_epochs_trained = 0
 
-    #     keras
-    model = Sequential()
-
-    model.add(Dense(hidden_size_0, input_shape=(num_actions,), activation='relu'))
-    model.add(Dense(hidden_size_1, activation='relu'))
-    model.add(Dense(hidden_size_0, activation='relu'))
-    model.add(Dense(num_actions))  # output layer
-    model.compile(optimizer=optimizers.adadelta(lr=learning_rate), loss=losses.mse)
-    if os.path.isfile(model_temp_name):
-        model = load_model(model_temp_name)
-        print("model_loaded")
-
-    if not os.path.isfile('{}.txt'.format(model_name)):
-        training_file = open('{}.txt'.format(model_name),'w')
-    training_file = open('{}.txt'.format(model_name), 'r')
+    if not os.path.isfile('{}.txt'.format(learning_ai(ai_player_1, ai_player_2, champion).model_name)):
+        training_file = open('{}.txt'.format(learning_ai(ai_player_1, ai_player_2, champion).model_name), 'w')
+    training_file = open('{}.txt'.format(learning_ai(ai_player_1, ai_player_2, champion).model_name), 'r')
     model_save_found = False
     epsilon_found = False
 
@@ -318,45 +349,38 @@ if __name__ == "__main__":
             key, value = line.split(" ")
         except ValueError:
             continue
-        if key == model_temp_name:
+        if key == temp_model(learning_ai(ai_player_1, ai_player_2, champion).model_name):
             model_epochs_trained = value
             model_save_found = True
-        if key == "epsilon":
-            epsilon = float(value)
-            epsilon_found = True
-        if key == "epsilondecay":
-            epsilon_decay = float(value)
+
     training_file.close()
     if model_save_found == False:
         print("epoch save not found defaulting to 0")
-        training_file = open('{}.txt'.format(model_name), 'a')
-        training_file.write("\n" + model_temp_name + " " + str(0))
+        cham_ai = ai_player_1 if champion==1 else ai_player_2
+        cham_file = open('{}.txt'.format(cham_ai.model_name), 'a')
+        cham_file.write(
+            "\n" + temp_model(cham_ai.model_name) + " " + str(0))
+        cham_file.close()
+
+        training_file = open('{}.txt'.format(learning_ai(ai_player_1, ai_player_2, champion).model_name), 'a')
+        training_file.write(
+            "\n" + temp_model(learning_ai(ai_player_1, ai_player_2, champion).model_name) + " " + str(0))
         training_file.close()
 
-    if epsilon_found == False:
-        print("epsilon not found defaulting given start values")
-        training_file = open('{}.txt'.format(model_name), 'a')
-        training_file.write("\n" + "epsilon" + " " + str(epsilon))
-        training_file.write("\n" + "epsilondecay" + " " + str(epsilon_decay))
-        training_file.close()
-
-    print("epsilon: {}, decay: {}".format(epsilon, epsilon_decay))
     # logging----- tensorboard --host 127.0.0.1 --logdir=./logs ---- logs are saved on the project directory
-    log_path = './logs/' + model_name
+    log_path = './logs/' + learning_ai(ai_player_1, ai_player_2, champion).model_name
     callback = TensorBoard(log_path)
-    callback.set_model(model)
-
-    ai_player_1 = Ai(max_memory=max_memory, playernr=1, discount=discount)
-    ai_player_2 = Ai(max_memory=max_memory, playernr=2, discount=discount)
+    callback.set_model(learning_ai(ai_1=ai_player_1, ai_2=ai_player_2, champion=champion))
 
     #     Train
     game_count = 0
+    total_learning_wins = 0
     loss = 0.
     print(model_epochs_trained)
     for e in range(int(model_epochs_trained), epoch):
         if e % 100 == 0 and e != model_epochs_trained:
             verbose = True
-            print(model_name)
+            print(learning_ai(ai_player_1, ai_player_2, champion).model_name)
         else:
             verbose = False
         env = GameExtended()
@@ -372,7 +396,6 @@ if __name__ == "__main__":
         action_2 = False
         input_2 = False
 
-
         # printing fields don't really help a lot right now i think
         if verbose:
             print("starting game")
@@ -384,92 +407,82 @@ if __name__ == "__main__":
         while not gameover:
             # AIMOVE
             input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input_1, gameover,
-                                                                                         ai_player_1, model, loss)
-            if ai_2_played:
-                loss = evaluate_ai(loss, ai_player_2, model, old_score_2, input_old_2, action_2, input_2, gameover,
-                                   batch_size)
+                                                                                         ai_player_1, loss)
+            if ai_2_played and champion != 2:
+                winner = None
+                if gameover:
+                    winnernr = 1 if env.player1["Points"] > env.player2["Points"] else 2
+                    if 2 == winnernr:
+                        winner = True
+                    else:
+                        winner = False
+                loss = evaluate_ai(loss, ai_player_2, old_score_2, input_old_2, action_2, input_2, gameover,
+                                   batch_size, winner=winner)
 
             if not gameover:
                 input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input_2, gameover,
-                                                                                             ai_player_2, model,
+                                                                                             ai_player_2,
                                                                                              loss)
                 ai_2_played = True
-                loss = evaluate_ai(loss, ai_player_1, model, old_score_1, input_old_1, action_1, input_1, gameover,
-                                   batch_size)
+                if champion != 1:
+                    winner = None
+                    if gameover:
+                        winnernr = 1 if env.player1["Points"] > env.player2["Points"] else 2
+                        if 1 == winnernr:
+                            winner = True
+                        else:
+                            winner = False
+                    loss = evaluate_ai(loss, ai_player_1, old_score_1, input_old_1, action_1, input_1, gameover,
+                                       batch_size, winner=winner)
 
         # logging after each game saving with the epoch number.
-        if e % 10 == 0 and e != model_epochs_trained: #play 1 4th of games against random
-            # play it against random
-            env = GameExtended()
-            input = env.convert_and_reshape_field_to_inputarray([env.rows, env.columns])
-            gameover = False
-            predicted = False
-            old_score = False
-            input_old = False
-            action = False
-            ai_wins = 0
-            random_wins = 0
-            ai_fields = 0
-            random_fields = 0
+        # play it against random
 
-            if verbose:
-                pass
-                # print("starting RANDOM game")
-                # print(field_to_str(env.rows, env.columns))
-            while not gameover:
-                # AIMOVE
-                input_old = input
-                input, gameover, old_score, input_old, action, loss = ai_player_move(input_1, gameover, ai_player_1,
-                                                                                     model, loss)
-                # RANDOMMOVE
-                if not gameover:
-                    input, gameover = random_player_move(gameover, 2)
-                    evaluate_ai(loss, ai_player_1, model, old_score, input_old, action, input, gameover, batch_size)
+        # logging after each game saving with the epoch number.
+        champion_field = env.player1["Points"] if champion == 1 else env.player2["Points"]
+        learning_field = env.player1["Points"] if champion == 2 else env.player2["Points"]
 
-            # logging after each game saving with the epoch number.
-            current_ai_field = env.player1["Points"]
-            current_random_field = env.player2["Points"]
-            if current_ai_field > current_random_field:
-                ai_wins = 1
-            elif current_random_field > current_ai_field:
-                random_wins = 1
-            ai_fields = current_ai_field
-            random_fields = current_random_field
+        learning_wins = 0
 
-            # final evolution
-            if verbose:
-                print("Ai Wins: {}, with {} fields \n Random Wins: {} with {} fields".format(ai_wins, ai_fields,
-                                                                                         random_wins,
+        if learning_field > champion_field:
+            learning_wins = 1
+            total_learning_wins += 1
 
-                                                                                         random_fields))
+        game_count += 1
 
-            write_log(callback, train_loss=loss, ai_wins=ai_wins, ai_fields=ai_fields, batch_no=e)
-            if verbose:
-                print("Epoch {:03d} | Loss {:.4f}".format(e, loss))
-                print("Epsilon is {} with Epsilon Decay {}".format(epsilon, epsilon_decay))
-
+        write_log(callback, train_loss=loss, ai_wins=learning_wins, ai_fields=learning_field, batch_no=e)
 
         if e % 50 == 0 and e != model_epochs_trained:
-            model.save(model_temp_name, overwrite=True)
-            training_file = open('{}.txt'.format(model_name), 'r')
+            l_ai = learning_ai(ai_1=ai_player_1, ai_2=ai_player_2, champion=champion)
+            l_ai.model.save(temp_model(l_ai.model_name), overwrite=True)
+            training_file = open('{}.txt'.format(l_ai.model_name), 'r')
             out = ""
             for line in training_file:
                 try:
                     key, value = line.split(" ")
                 except ValueError:
                     continue
-                if key == model_temp_name:
-                    out += model_temp_name + " " + str(e)
-                elif key == "epsilon":
-                    out += "\nepsilon " + str(epsilon)
-                elif key == "epsilondecay":
-                    out += "\nepsilondecay " + str(epsilon_decay)
+                if key == temp_model(l_ai.model_name):
+                    out += temp_model(l_ai.model_name) + " " + str(e)
                 else:
                     out += line
                 out += "\n"
             training_file.close()
-            new_file = open('{}.txt'.format(model_name), 'w')
+            new_file = open('{}.txt'.format(l_ai.model_name), 'w')
             new_file.write(out)
             new_file.close()
 
-    model.save(model_name, overwrite=False)
+        if game_count == 100:
+            if total_learning_wins >= 90:
+                champion = 1 if champion == 2 else 2
+                champion_file = open('champion.txt', 'w')
+                champion_file.write("{}".format(champion))
+                champion_file.close()
+                log_path = './logs/' + learning_ai(ai_player_1, ai_player_2, champion).model_name
+                callback = TensorBoard(log_path)
+                callback.set_model(learning_ai(ai_1=ai_player_1, ai_2=ai_player_2, champion=champion))
+            game_count = 0
+            total_learning_wins = 0
+
+    l_ai = learning_ai(ai_1=ai_player_1, ai_2=ai_player_2, champion=champion)
+    l_ai.model.save(l_ai.model_name, overwrite=False)
