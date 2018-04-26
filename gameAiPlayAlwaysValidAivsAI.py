@@ -20,7 +20,7 @@ train_mode_immediate = False
 # random moves
 
 
-epsilon = 0.1
+epsilon = 0.25
 
 
 class GameExtended(Game):
@@ -275,9 +275,9 @@ def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, bat
 
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     if winner == True:
-        reward += 4
+        reward += 1
     elif winner == False:
-        reward -= 4
+        reward -= 1
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
     # adapt model
