@@ -145,28 +145,14 @@ def game_over_show(env, user_nr, ai_nr):
     else:
         message_display('You lose with {} points! Ai points: {}'.format(points_user, points_ai))
 
-# here we should define a taker_player_move
-# return an action(maybefalse) and if it took
-def taker_player_move(input,env):
-    did_take = False
-    for i in range(0,144):
-        array_i, h, w = env.convert_action_to_move(i)
-        if validate_move(input,array_i,h,w):
-            did_take = True if new_full_fields(input,array_i,h,w) > 0 else False
-            if did_take:
-                print("I HELPED HIM, MEGA, i recommended him to play {}".format(i))
-                return i,did_take
 
-    return False, did_take
 
 def ai_move(field, env, ai_number):
     ais_turn = True
     while ais_turn:
         ais_turn = False
         input = env.convert_and_reshape_field_to_inputarray(field)
-        action, did_take = taker_player_move(input=field, env=env)
-        if not did_take:
-            action = find_best(model.predict(input)[0], env)
+        action = find_best(model.predict(input)[0], env)
         array_i, h, w = convert_action_to_move(action)
         field = draw_move(action, field, dark_green)
         new_fields = new_full_fields(field, array_i, h, w)
