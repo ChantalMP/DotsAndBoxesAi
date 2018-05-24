@@ -78,6 +78,7 @@ class GameExtended(Game):
     # action = move
     def _update_state(self, action, playernr):
         array_i, height, width = self.convert_action_to_move(action)
+        # delete this not used
         old_field = [self.rows, self.columns]
         self.success = self.make_move(array_i, height, width)
         if not self.success:
@@ -224,13 +225,14 @@ def random_player_move(gameover, playernr):
 
 # here we should define a taker_player_move
 # return an action(maybefalse) and if it took
-def taker_player_move(input):
+def taker_player_move():
     did_take = False
     for i in range(0,num_actions):
         array_i, h, w = env.convert_action_to_move(i)
-        did_take = True if new_full_fields(input,array_i,h,w) > 0 else False
-        if did_take:
-            return i,did_take
+        if validate_move([env.rows,env.columns], array_i, h, w):
+            did_take = True if new_full_fields([env.rows,env.columns],array_i,h,w) > 0 else False
+            if did_take:
+                return i,did_take
 
     return False, did_take
 
@@ -260,7 +262,7 @@ def ai_player_move(input, gameover, ai: Ai, loss, use_taker_player:bool):
         else:
             did_take = False
             if use_taker_player:
-                action,did_take = taker_player_move(input=input_old)
+                action,did_take = taker_player_move()
             if not did_take:
                 q = ai.model.predict(input_old)
                 action = find_best(q[0], env)
