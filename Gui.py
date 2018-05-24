@@ -1,7 +1,7 @@
 import pygame
 import time
 from gameView import width, height, test_field_full
-from gameLogic import new_full_fields, game_over
+from gameLogic import new_full_fields, game_over,validate_move
 import os, keras
 from keras.models import load_model
 from gameAiPlayAlwaysValidAivsAI import find_best, GameExtended
@@ -21,7 +21,7 @@ dark_green = (0,155,0)
 blue = (0, 20, 235)
 dark_blue = (0, 0, 155)
 
-model_name = "temp_mm500_hsmin288_hsmax576_lr1.0_d0.5_hl3_na144_tiFalseslowepsi.h5"
+model_name = "temp_mm500_hsmin1728_hsmax3456_lr1.0_d0.5_hl3_na144_tiFalse_2_1000000.h5"
 model = load_model(model_name)
 
 global lines
@@ -151,9 +151,11 @@ def taker_player_move(input,env):
     did_take = False
     for i in range(0,144):
         array_i, h, w = env.convert_action_to_move(i)
-        did_take = True if new_full_fields(input,array_i,h,w) > 0 else False
-        if did_take:
-            return i,did_take
+        if validate_move(input,array_i,h,w):
+            did_take = True if new_full_fields(input,array_i,h,w) > 0 else False
+            if did_take:
+                print("I HELPED HIM, MEGA, i recommended him to play {}".format(i))
+                return i,did_take
 
     return False, did_take
 
@@ -162,7 +164,7 @@ def ai_move(field, env, ai_number):
     while ais_turn:
         ais_turn = False
         input = env.convert_and_reshape_field_to_inputarray(field)
-        action, did_take = taker_player_move(input=input,env=env)
+        action, did_take = taker_player_move(input=field, env=env)
         if not did_take:
             action = find_best(model.predict(input)[0], env)
         array_i, h, w = convert_action_to_move(action)
