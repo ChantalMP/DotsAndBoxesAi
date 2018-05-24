@@ -20,7 +20,7 @@ train_mode_immediate = False
 # random moves
 
 
-epsilon = 0.25
+epsilon = 0.05
 
 
 class GameExtended(Game):
@@ -158,7 +158,7 @@ class Ai:
 
 
 # tensorboard logging method simplified for our project
-def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
+def write_log(callback, train_loss, ai_wins, ai_fields,latest_wins, batch_no):
     global epsilon
     summary = tf.Summary()
     # add train_loss
@@ -173,6 +173,9 @@ def write_log(callback, train_loss, ai_wins, ai_fields, batch_no):
     summary_value = summary.value.add()
     summary_value.simple_value = ai_fields
     summary_value.tag = "ai_fields"
+    summary_value = summary.value.add()
+    summary_value.simple_value = latest_wins
+    summary_value.tag = "latest_wins_in_100_turns"
     callback.writer.add_summary(summary, batch_no)
     callback.writer.flush()
 
@@ -219,7 +222,19 @@ def random_player_move(gameover, playernr):
     return input, gameover
 
 
-def ai_player_move(input, gameover, ai: Ai, loss):
+# here we should define a taker_player_move
+# return an action(maybefalse) and if it took
+def taker_player_move(input):
+    did_take = False
+    for i in range(0,num_actions):
+        array_i, h, w = env.convert_action_to_move(i)
+        did_take = True if new_full_fields(input,array_i,h,w) > 0 else False
+        if did_take:
+            return i,did_take
+
+    return False, did_take
+
+def ai_player_move(input, gameover, ai: Ai, loss, use_taker_player:bool):
     action = False
     old_score = False
     input_old = False
@@ -243,9 +258,15 @@ def ai_player_move(input, gameover, ai: Ai, loss):
                 array_i, h, w = env.convert_action_to_move(action)
                 valid = validate_move([env.rows, env.columns], array_i, h, w)
         else:
-            q = ai.model.predict(input_old)
-            action = find_best(q[0], env)
+            did_take = False
+            if use_taker_player:
+                action,did_take = taker_player_move(input=input_old)
+            if not did_take:
+                q = ai.model.predict(input_old)
+                action = find_best(q[0], env)
+
             predicted = True
+
         # apply action, get rewards and new state
         old_points = active_player["Points"]
         input, old_score, gameover = env.act(action, playernr)
@@ -275,9 +296,9 @@ def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, bat
 
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
     if winner == True:
-        reward += 1
+        reward += 0
     elif winner == False:
-        reward -= 1
+        reward -= 0
     # store experience
     ai.remember([input_old, action, reward, input], gameover)
     # adapt model
@@ -374,6 +395,7 @@ if __name__ == "__main__":
 
     #     Train
     game_count = 0
+    old_total_learning_wins = 0
     total_learning_wins = 0
     loss = 0.
     print(model_epochs_trained)
@@ -406,8 +428,8 @@ if __name__ == "__main__":
         # input_2 = output_1 and other way round
         while not gameover:
             # AIMOVE
-            input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input_1, gameover,
-                                                                                         ai_player_1, loss)
+            input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input=input_1, gameover=gameover,
+                                                                                         ai=ai_player_1, loss=loss, use_taker_player=champion==1)
             if ai_2_played and champion != 2:
                 winner = None
                 if gameover:
@@ -420,9 +442,9 @@ if __name__ == "__main__":
                                    batch_size, winner=winner)
 
             if not gameover:
-                input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input_2, gameover,
-                                                                                             ai_player_2,
-                                                                                             loss)
+                input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input=input_2, gameover=gameover,
+                                                                                             ai=ai_player_2,
+                                                                                             loss=loss,use_taker_player=champion==2)
                 ai_2_played = True
                 if champion != 1:
                     winner = None
@@ -449,8 +471,9 @@ if __name__ == "__main__":
             total_learning_wins += 1
 
         game_count += 1
-
-        write_log(callback, train_loss=loss, ai_wins=learning_wins, ai_fields=learning_field, batch_no=e)
+        if game_count == 100:
+            old_total_learning_wins = total_learning_wins
+        write_log(callback, train_loss=loss, ai_wins=learning_wins, ai_fields=learning_field,latest_wins=old_total_learning_wins, batch_no=e)
 
         if e % 50 == 0 and e != model_epochs_trained:
             l_ai = learning_ai(ai_1=ai_player_1, ai_2=ai_player_2, champion=champion)
