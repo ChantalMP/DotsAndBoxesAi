@@ -1,6 +1,7 @@
 import random
 from gameView import init_Field, field_to_str, test_field_full, width, height
 from gameLogic import validate_move, new_full_fields, game_over
+import numpy as np
 
 
 # give random field and check if valid
@@ -47,10 +48,12 @@ class Game:
             success = self.make_move(i, h, w)
         return i, h, w
 
+#not used
     def n_random_moves(self , n):
         for i in range(0,n):
             self.random_move()
 
+#not used
     def convert_user_move_to_array(self, move):
         try:
             move = move.split(" ")

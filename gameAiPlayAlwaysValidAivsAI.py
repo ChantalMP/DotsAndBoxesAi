@@ -41,6 +41,7 @@ class GameExtended(Game):
                 array_i = 1 - array_i
         return array_i, h, w
 
+#TODO
     def convert_input_array_to_field(self, input):
         a = self.rows
         b = self.columns
@@ -50,6 +51,7 @@ class GameExtended(Game):
             field[array_i][h][w] = input[i]
         return field
 
+#TODO
     def convert_field_to_inputarray(self, field):
         # field = [rows, colomns]
         input = np.zeros(num_actions)
@@ -70,12 +72,14 @@ class GameExtended(Game):
 
         return input
 
+#TODO
     def convert_and_reshape_field_to_inputarray(self, field):
         input_array = self.convert_field_to_inputarray(field)
         r_input_array = input_array.reshape((1, -1))
         return r_input_array
 
     # action = move
+    #TODO
     def _update_state(self, action, playernr):
         array_i, height, width = self.convert_action_to_move(action)
         # delete this not used
@@ -90,6 +94,7 @@ class GameExtended(Game):
     def _get_reward(self, playernr, old_score):
         return (self.get_player_score(playernr) - old_score)
 
+#TODO
     def act(self, action, playernr):
         old_score = self.get_player_score(playernr)
         self._update_state(action, playernr)
@@ -97,6 +102,7 @@ class GameExtended(Game):
         gameover = game_over(self)
         return self.convert_and_reshape_field_to_inputarray([self.rows, self.columns]), old_score, gameover
 
+#TODO
     def random_act(self, playernr):
         success = False
         while not success and self.free_edge_count() > 0:
@@ -132,10 +138,13 @@ class Ai:
 
         return model
 
+#TODO
     def remember(self, states, gameover):
         self.memory.append([states, gameover])
         if len(self.memory) > self.max_memory:
             del self.memory[0]
+
+#TODO
 
     def get_batch(self, model, batch_size=10):
         len_memory = len(self.memory)
@@ -180,7 +189,7 @@ def write_log(callback, train_loss, ai_wins, ai_fields,latest_wins, batch_no):
     callback.writer.add_summary(summary, batch_no)
     callback.writer.flush()
 
-
+#TODO state?
 def find_best_for_state(q, state):
     index = np.argmax(q)
     prediction = np.max(q)
@@ -191,7 +200,7 @@ def find_best_for_state(q, state):
         prediction = np.max(tmp)
     return prediction
 
-
+#TODO
 def find_best(q, env):
     action = np.argmax(q)
     array_i, h, w = env.convert_action_to_move(action)
@@ -202,7 +211,7 @@ def find_best(q, env):
         array_i, h, w = env.convert_action_to_move(action)
     return action
 
-
+#not used in this version
 def random_player_move(gameover, playernr):
     input = False
 
@@ -225,6 +234,7 @@ def random_player_move(gameover, playernr):
 
 # here we should define a taker_player_move
 # return an action(maybefalse) and if it took
+#TODO
 def taker_player_move():
     did_take = False
     for i in range(0,num_actions):
@@ -236,6 +246,7 @@ def taker_player_move():
 
     return False, did_take
 
+#TODO
 def ai_player_move(input, gameover, ai: Ai, loss, use_taker_player:bool):
     action = False
     old_score = False
@@ -254,7 +265,7 @@ def ai_player_move(input, gameover, ai: Ai, loss, use_taker_player:bool):
             valid = False
             if verbose:
                 pass
-                # print("THIS WAS JUST A GUESS")
+                #print("THIS WAS JUST A GUESS")
             while not valid:
                 action = random.randint(0, num_actions - 1)
                 array_i, h, w = env.convert_action_to_move(action)
@@ -292,7 +303,7 @@ def ai_player_move(input, gameover, ai: Ai, loss, use_taker_player:bool):
 
     return input, gameover, old_score, input_old, action, loss
 
-
+#TODO
 def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, batch_size,game_count, winner=None):
     global epsilon, epsilon_min, epsilon_decay
 
@@ -314,10 +325,8 @@ def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, bat
 
     return loss
 
-
 def temp_model(model_name):
-    return "temp_" + model_name
-
+    return "temp_{}".format(model_name)
 
 def learning_ai(ai_1, ai_2, champion):
     if champion == 1:
@@ -325,7 +334,7 @@ def learning_ai(ai_1, ai_2, champion):
     else:
         return ai_1
 
-
+#TODO
 if __name__ == "__main__":
     # TODO
     # randomly choose best move from best 5
@@ -423,7 +432,7 @@ if __name__ == "__main__":
         # printing fields don't really help a lot right now i think
         if verbose:
             print("starting game")
-            # print(field_to_str(env.rows, env.columns))
+            print(field_to_str(env.rows, env.columns))
 
         ai_2_played = False
 
