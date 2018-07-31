@@ -288,12 +288,12 @@ def ai_player_move(input, gameover, ai: Ai, loss, use_taker_player:bool):
                 else:
                     winner = False
             if champion != ai.playernr:
-                loss = evaluate_ai(loss, ai, old_score, input_old, action, input, gameover, batch_size, winner=winner)
+                loss = evaluate_ai(loss, ai, old_score, input_old, action, input, gameover, batch_size, game_count,winner=winner)
 
     return input, gameover, old_score, input_old, action, loss
 
 
-def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, batch_size, winner=None):
+def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, batch_size,game_count, winner=None):
     global epsilon, epsilon_min, epsilon_decay
 
     reward = env._get_reward(playernr=ai.playernr, old_score=old_score)
@@ -308,7 +308,7 @@ def evaluate_ai(loss, ai: Ai, old_score, input_old, action, input, gameover, bat
         inputs, targets = ai.get_batch(ai.model, batch_size=batch_size)
         loss += ai.model.train_on_batch(inputs, targets)
     else:
-        if gameover:
+        if gameover and game_count % 4 == 0:
             inputs, targets = ai.get_batch(ai.model, batch_size=batch_size)
             loss = ai.model.train_on_batch(inputs, targets)
 
@@ -333,7 +333,7 @@ if __name__ == "__main__":
     max_memory = 1 if train_mode_immediate else 500
     hidden_size_0 = num_actions * 12
     hidden_size_1 = num_actions * 24
-    batch_size = 1 if train_mode_immediate else 50
+    batch_size = 1 if train_mode_immediate else 200
     learning_rate = 1.0
     # learning_rate 1.0 for adadelta
     # only needed for sgd
@@ -441,7 +441,7 @@ if __name__ == "__main__":
                     else:
                         winner = False
                 loss = evaluate_ai(loss, ai_player_2, old_score_2, input_old_2, action_2, input_2, gameover,
-                                   batch_size, winner=winner)
+                                   batch_size, game_count,winner=winner)
 
             if not gameover:
                 input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input=input_2, gameover=gameover,
@@ -457,7 +457,7 @@ if __name__ == "__main__":
                         else:
                             winner = False
                     loss = evaluate_ai(loss, ai_player_1, old_score_1, input_old_1, action_1, input_1, gameover,
-                                       batch_size, winner=winner)
+                                       batch_size, game_count,winner=winner)
 
         # logging after each game saving with the epoch number.
         # play it against random
