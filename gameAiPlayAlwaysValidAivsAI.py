@@ -432,7 +432,7 @@ if __name__ == "__main__":
         # printing fields don't really help a lot right now i think
         if verbose:
             print("starting game")
-            print(field_to_str(env.rows, env.columns))
+            # print(field_to_str(env.rows, env.columns))
 
         ai_2_played = False
 
