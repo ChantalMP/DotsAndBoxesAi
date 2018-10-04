@@ -439,8 +439,13 @@ if __name__ == "__main__":
         # input_2 = output_1 and other way round
         while not gameover:
             # AIMOVE
-            input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input=input_1, gameover=gameover,
-                                                                                         ai=ai_player_1, loss=loss, use_taker_player=champion==1)
+            # input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input=input_1, gameover=gameover,
+            #                                                                              ai=ai_player_1, loss=loss, use_taker_player=champion==1)
+            input_2, gameover, old_score_1, input_old_1, action_1, loss = ai_player_move(input=input_1,
+                                                                                         gameover=gameover,
+                                                                                         ai=ai_player_1, loss=loss,
+                                                                                         use_taker_player=False)
+
             if ai_2_played and champion != 2:
                 winner = None
                 if gameover:
@@ -453,9 +458,14 @@ if __name__ == "__main__":
                                    batch_size, game_count,winner=winner)
 
             if not gameover:
-                input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input=input_2, gameover=gameover,
+                # input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input=input_2, gameover=gameover,
+                #                                                                              ai=ai_player_2,
+                #                                                                              loss=loss,use_taker_player=champion==2)
+                input_1, gameover, old_score_2, input_old_2, action_2, loss = ai_player_move(input=input_2,
+                                                                                             gameover=gameover,
                                                                                              ai=ai_player_2,
-                                                                                             loss=loss,use_taker_player=champion==2)
+                                                                                             loss=loss,
+                                                                                             use_taker_player=False)
                 ai_2_played = True
                 if champion != 1:
                     winner = None
