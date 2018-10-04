@@ -338,7 +338,7 @@ def learning_ai(ai_1, ai_2, champion):
 if __name__ == "__main__":
     # TODO
     # randomly choose best move from best 5
-    epoch = 8000000
+    epoch = 80000000
     max_memory = 1 if train_mode_immediate else 500
     hidden_size_0 = num_actions * 12
     hidden_size_1 = num_actions * 24

@@ -21,7 +21,7 @@ dark_green = (0,155,0)
 blue = (0, 20, 235)
 dark_blue = (0, 0, 155)
 
-model_name = "temp_mm500_hsmin1728_hsmax3456_lr1.0_d0.5_hl3_na144_tiFalse_1_2-8_taker_helper.h5"
+model_name = "temp_mm500_hsmin1728_hsmax3456_lr1.0_d0.5_hl3_na144_tiFalse_1_10m.h5"
 model = load_model(model_name)
 
 global lines
@@ -174,6 +174,13 @@ def print_points(points_user, points_ai):
     points = myfont.render("Points User: {}, Points Ai: {}".format(points_user, points_ai), 1, black)
     gameDisplay.blit(points, (80,40))
 
+def print_time(time):
+    rect = pygame.Rect(720, 40, 400, 30)
+    pygame.draw.rect(gameDisplay, white, rect)
+    myfont = pygame.font.SysFont(None, 40)
+    points = myfont.render("{}".format(time), 1, black)
+    gameDisplay.blit(points, (720, 40))
+
 def game_loop_ai_vs_user():
     gameDisplay.fill(white)
     gameexit = False
@@ -187,14 +194,17 @@ def game_loop_ai_vs_user():
     user_number = 1
     ai_number = 2
     pygame.display.update()
-
+    timer = time.time()
     while not gameexit:
+        time_left = 5 - int(time.time() - timer)
+        print_time(time_left)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
 
             if event.type == pygame.MOUSEBUTTONUP and not gameover:
+
                 pos = pygame.mouse.get_pos()
                 for idx, line in enumerate(lines):
                     array_i, h, w = convert_action_to_move(idx)
@@ -212,7 +222,9 @@ def game_loop_ai_vs_user():
                             pygame.event.set_blocked(pygame.MOUSEBUTTONUP)
                             field, gameover = ai_move(field, env, ai_number)
                             pygame.event.set_allowed(pygame.MOUSEBUTTONUP)
+                        timer = time.time()
                         break
+
 
         if gameover:
             game_over_show(env, user_number, ai_number)
