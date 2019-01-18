@@ -37,5 +37,7 @@ The game logic is completely implemented in python and each as we use reinforcem
 
 ## Usage:
 To install requirements call pip3 install -r requirements.txt 
+
 To train a model call python3 gameAiPlayAlwaysValidAivsAI.py(takes a lot of time) 
+
 To play against the model, make sure the gui.py is referencing your model(changes need to be made in code), and then call python3 Gui.py 
