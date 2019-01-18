@@ -36,6 +36,6 @@ Concerning the very long training time:
 The game logic is completely implemented in python and each as we use reinforcement learning training needs the whole game to be virtually played. Implementing the game in C++, more efficient python implementation of the game(maybe numpy) or parallelization would improve this. Also the use of GPU could have speed it up.
 
 ## Usage:
-To install requirements call pip3 install -r requirements.txt
-To train a model call python3 gameAiPlayAlwaysValidAivsAI.py(takes a lot of time)
-To play against the model, make sure the gui.py is referencing your model(changes need to be made in code), and then call python3 Gui.py
+To install requirements call pip3 install -r requirements.txt 
+To train a model call python3 gameAiPlayAlwaysValidAivsAI.py(takes a lot of time) 
+To play against the model, make sure the gui.py is referencing your model(changes need to be made in code), and then call python3 Gui.py 
