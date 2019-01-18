@@ -517,7 +517,7 @@ if __name__ == "__main__":
             new_file.close()
 
         if game_count == 100:
-            if total_learning_wins >= 90:
+            if total_learning_wins >= 95:
                 champion = 1 if champion == 2 else 2
                 champion_file = open('champion.txt', 'w')
                 champion_file.write("{}".format(champion))
