@@ -1,4 +1,4 @@
-from gameView import width, height
+from game.gameView import width, height
 
 def new_full_fields(field, which, h, w):
     ret = 0

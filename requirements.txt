@@ -1,7 +1,6 @@
-tensorflow
-keras
 matplotlib
 numpy
 h5py
 pygame
 venvdotapp
+torch==1.4

@@ -1,10 +1,10 @@
 import pygame
 import time
-from gameView import width, height, test_field_full
-from gameLogic import new_full_fields, game_over,validate_move
+from game.gameView import width, height, test_field_full
+from game.gameLogic import new_full_fields, game_over,validate_move
 import os, keras
 from keras.models import load_model
-from gameAiPlayAlwaysValidAivsAI import find_best, GameExtended
+from model.gameAiPlayAlwaysValidAivsAI import find_best, GameExtended
 
 
 pygame.init()
@@ -21,12 +21,10 @@ dark_green = (0,155,0)
 blue = (0, 20, 235)
 dark_blue = (0, 0, 155)
 
-model_name = "temp_mm500_hsmin1728_hsmax3456_lr1.0_d0.5_hl3_na144_tiFalse_1.h5"
-model = load_model(model_name)
+#model_name = "temp_mm500_hsmin1728_hsmax3456_lr1.0_d0.5_hl3_na144_tiFalse_1.h5"
+#model = load_model(model_name)
 
 global lines
-# img =  pygame.image.load('racecar.png)
-# drawing: gameDisplay.blit(img, (x,y))
 
 gameDisplay = pygame.display.set_mode((display_width, display_height))  # width and height
 pygame.display.set_caption("Dots and Boxes AI")
@@ -145,8 +143,23 @@ def game_over_show(env, user_nr, ai_nr):
     else:
         message_display('You lose with {} points! Ai points: {}'.format(points_user, points_ai))
 
+def random_move(field, env):
+    keep_playing = True
+    while keep_playing:
+        keep_playing = False
+        array_i, h, w = convert_action_to_move(action)
+        field = draw_move(action, field, dark_green)
+        new_fields = new_full_fields(field, array_i, h, w)
+        env.calculate_active_player(ai_number)["Points"] += new_fields
+        user_nr = 1 if ai_number == 2 else 2
+        print_points(env.calculate_active_player(user_nr)["Points"], env.calculate_active_player(ai_number)["Points"])
+        if game_over(env):
+            return field, True
+        if new_fields != 0:
+            keep_playing = True
+            pygame.time.wait(500)
 
-
+'''
 def ai_move(field, env, ai_number):
     ais_turn = True
     while ais_turn:
@@ -166,6 +179,7 @@ def ai_move(field, env, ai_number):
             pygame.time.wait(500)
 
     return field, False
+'''
 
 def print_points(points_user, points_ai):
     rect = pygame.Rect(80,40, 400, 30)

@@ -8,10 +8,6 @@ num_actions = square_size*(square_size+1)*2
 max_obstacles = 2
 max_obstacle_width = 3
 
-class MyException(Exception):
-    pass
-
-
 def init_Field():
     # rows
     rows = np.zeros(shape=(width + 1, height), dtype=int)
@@ -68,7 +64,7 @@ def create_obstacles(rows, columns):
 def setField(rows, columns, h, w):
     global height, width
     if h >= height or w >= width:
-        raise MyException("Invalid width or height")
+        raise Exception("Invalid width or height")
     columns[h][w] = 1
     columns[h][w + 1] = 1
     rows[h][w] = 1
