@@ -75,17 +75,15 @@ class GameField:
         elif direction == 'Below':
             return (self.field[y + 1, x - 1] == self.field[y + 2, x] == self.field[y + 1, x + 1] == 1)
 
-        elif direction == 'Left':
+        elif direction == 'Right':
             return (self.field[y - 1, x + 1] == self.field[y, x + 2] == self.field[y + 1, x + 1] == 1)
 
-        elif direction == 'Right':
+        elif direction == 'Left':
             return (self.field[y - 1, x - 1] == self.field[y, x - 2] == self.field[y + 1, x - 1] == 1)
 
         else:
             raise Exception(f'Unknown direction {direction}')
 
-
-    # TODO test this
     def new_full_fields(self, move):
         y,x = move
         full_fields = 0

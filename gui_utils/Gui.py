@@ -64,28 +64,82 @@ class GameGui:
     def create_lines(self):
         for y in range(self.game.game_field.representation_size):
             for x in range(self.game.game_field.representation_size):
-                if y % 2 == 0:
-                    line = pygame.Rect(x//2 * self.line_length + self.horizontal_space + self.line_thickness,
-                                       y // 2 * self.line_length + self.vertical_space,
-                                       self.line_length - self.line_thickness, self.line_thickness)
-                    self.lines.append(line)
-                    if self.game.game_field.field[y, x] == 1:
-                        pygame.draw.rect(game_gui.game_display, black, line)
-                    elif self.game.game_field.field[y, x] == -1:
-                        pygame.draw.rect(game_gui.game_display, grey, line)
+                if self.game.game_field.field[y, x] != 0:
+                    if y % 2 == 0:
+                        line = pygame.Rect(x//2 * self.line_length + self.horizontal_space + self.line_thickness,
+                                           y // 2 * self.line_length + self.vertical_space,
+                                           self.line_length - self.line_thickness, self.line_thickness)
+                        self.lines.append(line)
+                        if self.game.game_field.field[y, x] == 1:
+                            pygame.draw.rect(game_gui.game_display, black, line)
+                        elif self.game.game_field.field[y, x] == -1:
+                            pygame.draw.rect(game_gui.game_display, grey, line)
 
-                else:
-                    line = pygame.Rect(x // 2 * self.line_length + self.horizontal_space,
-                                       y // 2 * self.line_length + self.vertical_space + self.line_thickness, self.line_thickness,
-                                       self.line_length - self.line_thickness)
-                    self.lines.append(line)
-                    if self.game.game_field.field[y, x] == 1:
-                        pygame.draw.rect(game_gui.game_display, black, line)
-                        if self.game.game_field.is_square_full(y=y, x=x):
-                            pass
-                            #self.draw_full_field(y, x)  # field on the right
-                    elif self.game.game_field.field[y, x] == -1:
-                        pygame.draw.rect(game_gui.game_display, grey, line)
+                    else:
+                        line = pygame.Rect(x // 2 * self.line_length + self.horizontal_space,
+                                           y // 2 * self.line_length + self.vertical_space + self.line_thickness, self.line_thickness,
+                                           self.line_length - self.line_thickness)
+                        self.lines.append(line)
+                        if self.game.game_field.field[y, x] == 1:
+                            pygame.draw.rect(game_gui.game_display, black, line)
+                            if self.game.game_field.is_square_full(y=y, x=x):
+                                self.draw_full_field(y, x, color=dark_grey)  # field on the right
+                        elif self.game.game_field.field[y, x] == -1:
+                            pygame.draw.rect(game_gui.game_display, grey, line)
+
+    def convert_lineidx_to_move(self, idx):
+        repsize = self.game.game_field.representation_size
+        if idx%repsize < self.game.game_field.field_size: #horizontal cases
+            y = idx//repsize * 2
+            x = (idx % repsize) * 2 + 1
+        else: # vertical
+            y = idx//repsize * 2 + 1
+            x = (idx % repsize) * 2 - (repsize-1)
+
+        return y, x
+
+    def draw_full_field(self, y, x, color=dark_grey):
+        rect = pygame.Rect(x//2 * self.line_length + self.horizontal_space + self.line_thickness,
+                           y//2 * self.line_length + self.line_thickness + self.vertical_space, self.line_length - self.line_thickness,
+                           self.line_length - self.line_thickness)
+        pygame.draw.rect(self.game_display, color, rect)
+
+    def draw_new_full_fields(self, y, x, color):
+        horizontal = (y % 2) == 0
+
+        if horizontal:
+            # Above
+            if y != 0:
+                if self.game.game_field.check_square(y, x, direction='Above'):
+                    self.draw_full_field(y-2, x, color)
+            # Below
+            if y != self.game.game_field.representation_size:
+                if self.game.game_field.check_square(y, x, direction='Below'):
+                    self.draw_full_field(y, x, color)
+        else:
+            # Left
+            if x != 0:
+                if self.game.game_field.check_square(y, x, direction='Left'):
+                    self.draw_full_field(y, x-2, color)
+            # Right
+            if x != self.game.game_field.representation_size:
+                if self.game.game_field.check_square(y, x, direction='Right'):
+                    self.draw_full_field(y, x, color)
+
+        pygame.display.update()
+
+    def draw_move(self, idx, y, x, color):
+        line = self.lines[idx]
+        self.game.game_field.make_move((y,x))
+        pygame.draw.rect(self.game_display, red, line)
+        pygame.display.update()
+        pygame.event.pump()
+        pygame.time.wait(500)
+        pygame.draw.rect(self.game_display, color, line)
+        pygame.display.update()
+        field_color = green if color == dark_green else blue
+        self.draw_new_full_fields(y, x, field_color)
+
 
 
 if __name__ == '__main__':
@@ -101,6 +155,7 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
 
     pygame.display.update()
+    print(len(game_gui.lines))
 
     while not game_gui.game.game_over():
 
@@ -111,3 +166,8 @@ if __name__ == '__main__':
 
             if event.type == pygame.MOUSEBUTTONUP and not game_gui.game.game_over():
                 pos = pygame.mouse.get_pos()
+                for idx, line in enumerate(game_gui.lines):
+                    if line.collidepoint(pos):
+                        y,x = game_gui.convert_lineidx_to_move(idx)
+                        if game_gui.game.game_field.field[y,x] == -1:
+                            game_gui.draw_move(idx, y, x, color=dark_blue)
