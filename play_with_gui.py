@@ -1,10 +1,5 @@
 import pygame
-import time
-# from game.gameView import width, height, test_field_full
-# from game.gameLogic import new_full_fields, game_over,validate_move
 from game.game import Game, HumanPlayer, AiPlayer, RandomPlayer, Player
-
-# from model.gameAiPlayAlwaysValidAivsAI import find_best, GameExtended
 
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -99,7 +94,7 @@ class GameGui:
 
         return y, x
 
-    def convert_move_to_lineidx(self,y,x):
+    def convert_move_to_lineidx(self, y, x):
         idx = int(((x - 1) / 2) + ((y / 2) * self.game.game_field.representation_size))
         return idx
 
@@ -145,7 +140,6 @@ class GameGui:
         pygame.display.update()
         field_color = green if color == dark_green else blue
         self.draw_new_full_fields(y, x, field_color)
-
 
     def random_move(self):
         while not game_gui.game.game_over():
@@ -207,6 +201,5 @@ if __name__ == '__main__':
                             pygame.event.set_allowed(pygame.MOUSEBUTTONUP)
 
                         break
-
 
     print(f'Winner is: {game_gui.game.winner}')
