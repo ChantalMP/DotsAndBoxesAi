@@ -83,20 +83,6 @@ class GameGui:
                         elif self.game.game_field.field[y, x] == -1:
                             pygame.draw.rect(game_gui.game_display, grey, line)
 
-    def convert_lineidx_to_move(self, idx):
-        repsize = self.game.game_field.representation_size
-        if idx % repsize < self.game.game_field.field_size:  # horizontal cases
-            y = idx // repsize * 2
-            x = (idx % repsize) * 2 + 1
-        else:  # vertical
-            y = idx // repsize * 2 + 1
-            x = (idx % repsize) * 2 - (repsize - 1)
-
-        return y, x
-
-    def convert_move_to_lineidx(self, y, x):
-        idx = int(((x - 1) / 2) + ((y / 2) * self.game.game_field.representation_size))
-        return idx
 
     def draw_full_field(self, y, x, color=dark_grey):
         rect = pygame.Rect(x // 2 * self.line_length + self.horizontal_space + self.line_thickness,
@@ -144,7 +130,7 @@ class GameGui:
     def random_move(self):
         while not game_gui.game.game_over():
             y, x = player_1.get_move(game_gui.game.game_field)  # Always valid
-            idx = game_gui.convert_move_to_lineidx(y, x)
+            idx = game_gui.game.game_field.convert_move_to_lineidx(y, x)
             game_gui.draw_move(idx, y, x, color=dark_green)
             new_full_fields = game_gui.game.game_field.new_full_fields((y, x))
             game_gui.game.active_player.points += new_full_fields
@@ -182,7 +168,7 @@ if __name__ == '__main__':
                 pos = pygame.mouse.get_pos()
                 for idx, line in enumerate(game_gui.lines):
                     if line.collidepoint(pos):
-                        y, x = game_gui.convert_lineidx_to_move(idx)
+                        y, x = game_gui.game.game_field.convert_lineidx_to_move(idx)
                         if game_gui.game.game_field.field[y, x] == -1:
                             game_gui.draw_move(idx, y, x, color=dark_blue)
 

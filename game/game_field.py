@@ -43,6 +43,21 @@ class GameField:
                     self.paint_square(i)
                     self.field = self.field.T
 
+    def convert_lineidx_to_move(self, idx):
+        repsize = self.representation_size
+        if idx % repsize < self.field_size:  # horizontal cases
+            y = idx // repsize * 2
+            x = (idx % repsize) * 2 + 1
+        else:  # vertical
+            y = idx // repsize * 2 + 1
+            x = (idx % repsize) * 2 - (repsize - 1)
+
+        return y, x
+
+    def convert_move_to_lineidx(self, y, x):
+        idx = int(((x - 1) / 2) + ((y / 2) * self.representation_size))
+        return idx
+
     def paint_square(self, square):
         y = int(square / self.field_size) * 2
         x = (square % self.field_size) * 2 + 1
