@@ -13,8 +13,17 @@ class Player:
         pass
 
 class AiPlayer(Player):
+    def __init__(self, is_student, model):
+        super().__init__()
+        self.is_student = is_student
+        self.model = model
+
     def get_move(self, game_field:GameField):
-        pass
+        valid_moves = game_field.valid_moves()
+        move = random.choice(valid_moves)
+        #TODO exploration
+
+        return move
 
 class HumanPlayer(Player):
     def get_move(self, game_field:GameField):

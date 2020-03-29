@@ -1,13 +1,18 @@
 import random
 import math
-from itertools import count
+from itertools import count, chain
+from multiprocessing import Pool
+import numpy as np
+from collections import namedtuple
 
 import torch
 from torch.nn import functional as F
 
-from model.utils import ReplayMemory,Transition
+from game.game import Game
+from game.game import AiPlayer
 
-
+Transition = namedtuple('Transition',
+                        ('state', 'action', 'next_state', 'reward', 'done'))
 
 class TrainWrapper:
     def __init__(self,batch_size=128,gamma=0.999,eps_start=0.9,eps_end=0.05,eps_decay=200,target_update=10,num_episodes=50):
@@ -20,20 +25,18 @@ class TrainWrapper:
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.num_episodes = num_episodes
 
-        # TODO init game here
-        # TODO get number of actions
-        self.n_actions = None
+        self.n_actions = 144
+        self.active_student = 1
+        self.models = [1,2]
 
         # TODO init net
         self.model = None
 
         # TODO maybe call eval where target_net is used
-
+        # TODO teacher learner
 
         # TODO choose optimizer
         # optimizer = optim.RMSprop(policy_net.parameters())
-
-        self.memory = ReplayMemory(10000)
 
         self.steps_done = 0
 
@@ -53,81 +56,95 @@ class TrainWrapper:
         else:
             return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.long)
 
-    def optimize_model(self):
-        self.model.train()
-        if len(self.memory) < self.batch_size:
-            return
-        transitions = self.memory.sample(self.batch_size)
-        # This converts batch-array of Transitions to Transition of batch-arrays.
-        batch = Transition(*zip(*transitions))
+    def change_student(self):
+        self.active_student = 1 if self.active_student == 2 else 2
 
-        # Compute a mask of non-final states and concatenate the batch elements
-        # (a final state would've been the one after which simulation ended)
-        # TODO not sure if we want this or if this would work correct for us
-        # TODO maybe just don't save these at all?
-        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                                batch.next_state)), device=self.device, dtype=torch.bool)
-        non_final_next_states = torch.cat([s for s in batch.next_state
-                                           if s is not None])
-        state_batch = torch.cat(batch.state)
-        action_batch = torch.cat(batch.action)
-        reward_batch = torch.cat(batch.reward)
+    # return ('state', 'action', 'next_state', 'reward') tuples for each move of student
+    def play_AI_game(self, _):
+        student_is_1 = True if self.active_student == 1 else False
+        player1 = AiPlayer(is_student = student_is_1, model = self.models[0])
+        player2 = AiPlayer(is_student = not student_is_1, model = self.models[1])
+        game = Game(player1, player2)
 
-        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-        # columns of actions taken. These are the actions which would've been taken
-        # for each batch state according to policy_net
-        state_action_values = self.model(state_batch).gather(1, action_batch)
+        transitions = []
+        while not game.game_over():
+            state = game.game_field.field.copy()
+            move = game.active_player.get_move(game.game_field)  # move is y,x
+            game.game_field.make_move(move)
+            new_full_fields = game.game_field.new_full_fields(move)
+            game.active_player.points += new_full_fields
 
-        # Compute V(s_{t+1}) for all next states.
-        # Expected values of actions for non_final_next_states are computed based
-        # on the "older" target_net; selecting their best reward with max(1)[0].
-        # This is merged based on the mask, such that we'll have either the expected
-        # state value or 0 in case the state was final.
-        # TODO this was target net but we changed it to the same model
-        self.model.eval()
-        next_state_values = torch.zeros(self.batch_size, device=self.device)
-        next_state_values[non_final_mask] = self.model(non_final_next_states).max(1)[0].detach()
-        # Compute the expected Q values
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+            if game.active_player.is_student:
+                transition = Transition(state=state, action=move, next_state=game.game_field.field, reward=new_full_fields, done = game.game_over())
+                transitions.append(transition)
 
-        # Compute Huber loss
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+            if new_full_fields == 0:
+                game.change_player()
 
-        # Optimize the model
-        self.optimizer.zero_grad()
-        loss.backward()
-        for param in self.model.parameters():
-            param.grad.data.clamp_(-1, 1)
-        self.optimizer.step()
+        return transitions
+
+    def reshape_batches(self, batches):
+        reshaped_batches = []
+        for batch in batches:
+            batch = Transition(*zip(*batch))
+            states = np.array(batch.state,dtype=np.int16)
+            next_states = np.array(batch.next_state,dtype=np.int16)
+            actions = np.array(batch.action,dtype=np.int16)
+            rewards = np.array(batch.reward,dtype=np.int16)
+            dones = np.array(batch.done,dtype=np.int16)
+            reshaped_batches.append((states,next_states,actions,rewards,dones))
+
+        return reshaped_batches
+
+    def convert_transitions_to_batches(self, transitions):
+        n_batches = len(transitions)//self.batch_size
+        transitions_array = np.array(transitions)
+        np.random.shuffle(transitions_array)
+        batches = np.split(transitions_array[:n_batches*self.batch_size], n_batches)
+        batches = self.reshape_batches(batches)
+
+        return batches
+
 
     def train(self):
 
+        model = self.models[self.active_student-1]
         for i_episode in range(self.num_episodes):
-            # TODO reset game
-            # TODO get current state
-            for t in count():
-                # Select and perform an action
-                action = self.select_action(state)
-                _, reward, done, _ = None # TODO get reward and if done or not
-                reward = torch.tensor([reward], device=self.device)
+            # play games
+            with Pool(4) as p:
+                transition_lists = p.map(self.play_AI_game, range(4))
+            transitions = list(chain.from_iterable(transition_lists)) # concat lists
+            batches = self.convert_transitions_to_batches(transitions)
 
-                # TODO Observe new state
-                if not done:
-                    next_state = None # TODO change this
-                else:
-                    next_state = None
+            for states,next_states,actions,rewards,dones in batches:
+                model.train()
 
-                # Store the transition in memory
-                self.memory.push(state, action, next_state, reward)
+                # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
+                # columns of actions taken. These are the actions which would've been taken
+                # for each batch state according to policy_net
+                state_action_values = self.model(states).gather(1, actions)
 
-                # Move to the next state
-                state = next_state # TODO not sure?
+                # Compute V(s_{t+1}) for all next states.
+                # TODO this was target net but we changed it to the same model
+                self.model.eval()
+                next_state_values = torch.zeros(self.batch_size, device=self.device)
+                # Only for next state which are not game end
+                next_state_values[dones == 0] = self.model(states[dones == 0]).max(1)[0].detach()
+                # Compute the expected Q values
+                expected_state_action_values = (next_state_values * self.gamma) + rewards
 
-                # Perform one step of the optimization (on the target network)
-                self.optimize_model()
-                if done:
-                    break
+                # Compute Huber loss
+                loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
 
+                # Optimize the model
+                self.optimizer.zero_grad()
+                loss.backward()
+                for param in self.model.parameters():
+                    param.grad.data.clamp_(-1, 1)
+                self.optimizer.step()
+
+        # TODO switch student and corresponding model depending on wins
+        # TODO calculate calculate wins
         print('Complete')
 
 
@@ -135,3 +152,4 @@ class TrainWrapper:
 if __name__ == '__main__':
 
     train_wrapper = TrainWrapper()
+    train_wrapper.train()
