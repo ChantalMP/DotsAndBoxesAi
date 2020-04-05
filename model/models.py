@@ -3,7 +3,7 @@ from torch import nn
 class Net(nn.Module):
     def __init__(self,n_actions=144):
         super(Net, self).__init__()
-        base_out_channels = 4
+        base_out_channels = 8
         self.n_actions = n_actions
         self.conv1 = nn.Conv2d(1, base_out_channels, kernel_size=5, padding=2)
         self.bn1 = nn.BatchNorm2d(base_out_channels)

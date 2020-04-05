@@ -22,21 +22,21 @@ class AiPlayer(Player):
         self.model = model
         self.eps_threshold = None
 
-    def get_move(self, game_field: GameField, eps_threshold: float, device):
+    def get_move(self, game_field: GameField, eps_threshold: float):
         sample = random.random()
         valid_moves = game_field.valid_moves()
         self.model.steps_done += 1
 
-        if sample > eps_threshold:
-            with torch.no_grad():
-                # t.max(1) will return largest column value of each row.
-                # second column on max result is index of where max element was
-                # found, so we pick action with the largest expected reward.
-                state = torch.FloatTensor(game_field.field, device=device)
-                action = self.model(state.unsqueeze(dim=0).unsqueeze(dim=0)).max(1)[1].view(1, 1)
-                move = game_field.convert_lineidx_to_move(action.item())
-                if move in valid_moves:
-                    return move
+        # if sample > eps_threshold:
+        #     with torch.no_grad():
+        #         # t.max(1) will return largest column value of each row.
+        #         # second column on max result is index of where max element was
+        #         # found, so we pick action with the largest expected reward.
+        #         state = torch.tensor(game_field.field,dtype=torch.float32)
+        #         action = self.model(state.unsqueeze(dim=0).unsqueeze(dim=0)).max(1)[1].view(1, 1)
+        #         move = game_field.convert_lineidx_to_move(action.item())
+        #         if move in valid_moves:
+        #             return move
 
         # If exploration or Ai choose unvalid move pick random move
         move = random.choice(valid_moves)

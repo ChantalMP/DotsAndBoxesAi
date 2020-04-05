@@ -4,3 +4,4 @@ h5py
 pygame
 venvdotapp
 torch==1.4
+tqdm==4.44.0

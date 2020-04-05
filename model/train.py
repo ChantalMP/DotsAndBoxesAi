@@ -1,102 +1,70 @@
 import random
 import math
 from itertools import count, chain
-from multiprocessing import Pool
 import numpy as np
 from collections import namedtuple
+from tqdm import tqdm
 
 import torch
 from torch.nn import functional as F
 from torch import optim
+from torch.optim.adamw import AdamW
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
-from game.game import Game
-from game.game import AiPlayer
 from model.models import Net
+from model.dataset import CustomDataset
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward', 'done'))
 
 
 class TrainWrapper:
-    def __init__(self, batch_size=128, gamma=0.999, eps_start=0.9, eps_end=0.05, eps_decay=200, target_update=10,
-                 num_episodes=50,eval_steps=25,win_ratio=0.9,games_per_episode=4):
+    def __init__(self, batch_size=256, gamma=0.999, target_update=10,
+                 num_episodes=50000, eval_steps=1000, win_ratio=0.9, games_per_episode=4):
         self.batch_size = batch_size
         self.gamma = gamma
-        self.eps_start = eps_start
-        self.eps_end = eps_end
-        self.eps_decay = eps_decay
+
         self.target_update = target_update
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         self.num_episodes = num_episodes
 
         self.n_actions = 144
         self.eval_steps = eval_steps
-        self.win_ratio =  win_ratio
+        self.win_ratio = win_ratio
         self.games_per_episode = games_per_episode
         self.active_student = 1
-        self.models = [Net(), Net()]
-        self.models[0].eval()
-        self.models[1].eval()
+        self.training_models = [Net(), Net()]
+        self.training_models[0].to(self.device)
+        self.training_models[1].to(self.device)
+        self.training_models[0].eval()
+        self.training_models[1].eval()
 
+        self.playing_models = [Net(), Net()] #TODO these have to be updated regularlry
+        self.playing_models[0].eval()
+        self.playing_models[1].eval()
 
-        self.optims = [optim.AdamW(model.parameters()) for model in self.models]
+        # TODO LR
+        lr = 1e-5
+        self.optims = [AdamW(model.parameters(),lr=lr) for model in self.training_models]
 
-        # total_params = sum(p.numel() for p in self.models[0].parameters())
-        # trainable_params = sum(p.numel() for p in self.models[0].parameters() if p.requires_grad)
-        # print(f'\nTotal Paramaters: {total_params:,}, Trainable Parameters: {trainable_params:,}\n')
-        # TODO tensorboard integration
-
+        total_params = sum(p.numel() for p in self.training_models[0].parameters())
+        trainable_params = sum(p.numel() for p in self.training_models[0].parameters() if p.requires_grad)
+        print(f'\nTotal Paramaters: {total_params:,}, Trainable Parameters: {trainable_params:,}\n')
+        self.writer = SummaryWriter()
 
     def change_student(self):
         self.active_student = 1 if self.active_student == 2 else 2
-
-    # return ('state', 'action', 'next_state', 'reward') tuples for each move of student
-    def play_AI_game(self, _):
-        assert self.models[0].training == False and self.models[1].training == False
-
-        student_is_1 = True if self.active_student == 1 else False
-        player1 = AiPlayer(is_student=student_is_1, model=self.models[0])
-        player2 = AiPlayer(is_student=not student_is_1, model=self.models[1])
-        game = Game(player1, player2)
-        # TODO change place
-        player1.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-                        math.exp(-1. * player1.model.steps_done / self.eps_decay)
-        player2.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-                          math.exp(-1. * player2.model.steps_done / self.eps_decay)
-
-        transitions = []
-        while not game.game_over():
-            state = game.game_field.field.copy()
-            move = game.active_player.get_move(game.game_field,game.active_player.eps_threshold,self.device)  # move is y,x
-            game.game_field.make_move(move)
-            new_full_fields = game.game_field.new_full_fields(move)
-            game.active_player.points += new_full_fields
-
-            if game.active_player.is_student:
-                y, x = move
-                action = game.game_field.convert_move_to_lineidx(y,x)
-                transition = Transition(state=state, action=action, next_state=game.game_field.field,
-                                        reward=new_full_fields, done=game.game_over())
-                transitions.append(transition)
-
-            if new_full_fields == 0:
-                game.change_player()
-
-        winner = game.winner
-        if winner is not None:
-            game.winner.model.wins += 1
-
-        return transitions
 
     def reshape_batches(self, batches):
         reshaped_batches = []
         for batch in batches:
             batch = Transition(*zip(*batch))
-            states = torch.FloatTensor(batch.state).unsqueeze(dim=1)
-            next_states = torch.FloatTensor(batch.next_state)
-            actions = torch.LongTensor(batch.action)
-            rewards = torch.FloatTensor(batch.reward)
-            dones = torch.FloatTensor(batch.done)
+            states = torch.tensor(batch.state, dtype=torch.float32, device=self.device).unsqueeze(dim=1)
+            next_states = torch.tensor(batch.next_state, dtype=torch.float32, device=self.device)
+            actions = torch.tensor(batch.action, dtype=torch.int64, device=self.device)
+            rewards = torch.tensor(batch.reward, dtype=torch.float32, device=self.device)
+            dones = torch.tensor(batch.done, dtype=torch.float32, device=self.device)
             reshaped_batches.append((states, next_states, actions, rewards, dones))
 
         return reshaped_batches
@@ -110,70 +78,88 @@ class TrainWrapper:
 
         return batches
 
-    def train_model(self):
+    def save_models(self, name=""):
+        for idx,model in enumerate(self.training_models):
+            torch.save(model, f"trained_models/model_{idx}_{name}.pth")
 
-        model = self.models[self.active_student - 1]
+    def train_model(self):
+        dataset = CustomDataset(models=self.playing_models,active_student=self.active_student,length=self.num_episodes*self.batch_size) # TODO make sure active student is changed
+        dataloader = DataLoader(dataset=dataset,batch_size=self.batch_size,shuffle=False,num_workers=0,pin_memory=False) # TODO maybe just do MP in dataloader and num_workers =0
+
+        training_model = self.training_models[self.active_student - 1]
         optimizer = self.optims[self.active_student - 1]
 
-        for i_episode in range(self.num_episodes):
-            # play games
-            from time import time
-            # start = time()
-            # transition_lists = [self.play_AI_game(a) for a in range(4)]
-            with Pool(4) as p:
-                transition_lists = p.map(self.play_AI_game, range(self.games_per_episode))
+        eval_step = 0
+        total_loss = 0.
 
-            # print(time()-start)
-            transitions = list(chain.from_iterable(transition_lists))  # concat lists
-            batches = self.convert_transitions_to_batches(transitions)
+        for i_episode,batch in enumerate(tqdm(dataloader,total=self.num_episodes)):
+            for idx in range(len(batch)):
+                batch[idx] = batch[idx].to(self.device)
 
-            for states, next_states, actions, rewards, dones in batches:
-                model.train()
+            states, next_states, actions, rewards, dones = batch
+            states = states.unsqueeze(dim=1)
 
-                # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-                # columns of actions taken. These are the actions which would've been taken
-                # for each batch state according to policy_net
-                model_output = model(states)
-                state_action_values = model_output.gather(1, actions.unsqueeze(dim=-1))
+            training_model.train()
 
-                # Compute V(s_{t+1}) for all next states.
-                # This was target_net but we changed it to the same model
-                model.eval()
-                next_state_values = torch.zeros(self.batch_size, device=self.device)
-                # Only for next state which are not game end
-                next_state_values[dones == 0] = model(states[dones == 0]).max(1)[0].detach()
-                # Compute the expected Q values
-                expected_state_action_values = (next_state_values * self.gamma) + rewards
+            # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
+            # columns of actions taken. These are the actions which would've been taken
+            # for each batch state according to policy_net
+            model_output = training_model(states)
+            state_action_values = model_output.gather(1, actions.unsqueeze(dim=-1))
+            #
+            #     # Compute V(s_{t+1}) for all next states.
+            #     # This was target_net but we changed it to the same model
+            training_model.eval()
+            next_state_values = torch.zeros(self.batch_size, device=self.device)
+            # Only for next state which are not game end
+            next_state_values[dones == 0] = training_model(states[dones == 0]).max(1)[0].detach()
+            # Compute the expected Q values
+            expected_state_action_values = (next_state_values * self.gamma) + rewards
 
-                # Compute Huber loss
-                loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+            # Compute Huber loss
+            loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
 
-                # Optimize the model
-                optimizer.zero_grad()
-                loss.backward()
-                # TODO scheduler?
-                for param in model.parameters():
-                    param.grad.data.clamp_(-1, 1)
-                optimizer.step()
+            # Optimize the model
+            optimizer.zero_grad()
+            loss.backward()
+            total_loss += loss.item()
+            # TODO scheduler?
+            for param in training_model.parameters():
+                param.grad.data.clamp_(-1, 1)
+            optimizer.step()
 
-            print('HI')
-            if i_episode % self.eval_steps == 0 and i_episode > 0:
-                student_model = self.models[self.active_student-1]
-                teacher_model = self.models[1- (self.active_student-1)]
-                total_wins = student_model.wins + teacher_model.wins
+            # TODO update playing models (they are just training models that always live on the cpu)
 
-                print(f'Teacher Won: {teacher_model.wins / total_wins}\n Student Won: {student_model.wins/total_wins}\n')
+        if i_episode % self.eval_steps == 0 and i_episode > 0:
+            eval_step +=1
+            student_model = self.training_models[self.active_student - 1]
+            teacher_model = self.training_models[1 - (self.active_student - 1)]
+            total_wins = student_model.wins + teacher_model.wins
 
-                if student_model.wins > total_wins * self.win_ratio:
-                    print('Switching student and teacher')
-                    self.change_student()
+            print(
+                f'\nTeacher Won: {teacher_model.wins / total_wins:.3f}\n Student Won: {student_model.wins / total_wins:.3f}\n')
 
-                student_model.wins = 0
-                teacher_model.wins = 0
+            #Tensorboard
+            self.writer.add_scalar(f'Loss/Player{self.active_student}', total_loss, eval_step)
+            self.writer.add_scalar(f'Wins/Player{self.active_student}', student_model.wins, eval_step)
 
+
+            if student_model.wins > total_wins * self.win_ratio:
+                print('Switching student and teacher')
+                self.change_student()
+
+            student_model.wins = 0
+            teacher_model.wins = 0
+            total_loss = 0.
+            self.save_models(name="eval")
+
+
+        self.writer.close()
+        self.save_models(name="version1")
         print('Complete')
 
-
+# TODO parallelize training (get_move)
+# TODO evaluate and work on better model
 if __name__ == '__main__':
     train_wrapper = TrainWrapper()
     train_wrapper.train_model()
